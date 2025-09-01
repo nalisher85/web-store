@@ -1,0 +1,20 @@
+/* --- БАЗОВЫЙ РЕСЕТ ДЛЯ TELEGRAM WEBVIEW --- */
+:root { color-scheme: light; } /* запрет автотёмной схемы */
+html, body, #app { height: 100%; margin: 0; padding: 0; background: #fff; }
+* { box-sizing: border-box; }
+
+/* iOS WebView иногда навешивает нативный вид на кнопки */
+button, [role="button"] { -webkit-appearance: none; appearance: none; }
+
+/* изображения не «выпирают» за контейнер */
+img { max-width: 100%; height: auto; }
+
+/* фикс подложки и резинки iOS */
+html, body, #app {
+  background-color: #fff !important;
+  min-height: 100dvh;      /* учитывает safe-area на iOS */
+}
+
+body {
+  overscroll-behavior-y: contain; /* не тянуть страницу до системного фона */
+}
