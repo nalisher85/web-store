@@ -97,8 +97,8 @@ const router = useRouter()
 
 const items = computed(() =>
   cartStore.items.map(ci => {
-    const good = goodsStore.allGoods.find(g => g.stack.some(s => s.barcode === ci.barcode))
-    const stock = good?.stack.find(s => s.barcode === ci.barcode)
+    const good = goodsStore.allGoods.find(g => g.stock.some(s => s.barcode === ci.barcode))
+    const stock = good?.stock.find(s => s.barcode === ci.barcode)
     return {
       productName: good?.good.name ?? 'Товар',
       productProperties: '',

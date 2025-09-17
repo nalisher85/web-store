@@ -93,12 +93,12 @@ watch(
 )
 
 /* Цена/штрихкод — как на деталке */
-const hasPrice = computed(() => props.good.stack?.[0]?.webPrice != null)
+const hasPrice = computed(() => props.good.stock?.[0]?.webPrice != null)
 const priceText = computed(() => {
-  const p = props.good.stack?.[0]?.webPrice
+  const p = props.good.stock?.[0]?.webPrice
   return p != null ? `${p} ₽` : 'Цена не указана'
 })
-const firstBarcode = computed(() => props.good.stack?.[0]?.barcode || '')
+const firstBarcode = computed(() => props.good.stock?.[0]?.barcode || '')
 
 /* Поведение кнопки: “Добавлено ✅” на 1.5с */
 const isAdded = ref(false)

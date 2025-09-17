@@ -190,8 +190,8 @@ const onEnter = () => inputEl.value?.blur()
 const addedIds = ref<Set<number>>(new Set())
 const isAdded = (id: number) => addedIds.value.has(id)
 
-const firstBarcode = (it: GoodWithStack) => it.stack?.[0]?.barcode || ''
-const hasFirstPrice = (it: GoodWithStack) => it.stack?.[0]?.webPrice != null
+const firstBarcode = (it: GoodWithStack) => it.stock?.[0]?.barcode || ''
+const hasFirstPrice = (it: GoodWithStack) => it.stock?.[0]?.webPrice != null
 
 const quickAdd = (it: GoodWithStack) => {
   const bc = firstBarcode(it)
@@ -224,7 +224,7 @@ const firstImg = (it: GoodWithStack) => (hasImg(it) ? it.good.defaultImages[0] :
 
 /** ---- Цена ---- */
 const minPrice = (it: GoodWithStack): number | null => {
-  const prices = (it.stack ?? [])
+  const prices = (it.stock ?? [])
     .map((s: Stock) => s.webPrice)
     .filter((p): p is number => typeof p === 'number')
   return prices.length ? Math.min(...prices) : null

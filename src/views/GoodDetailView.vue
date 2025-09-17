@@ -7,7 +7,7 @@
     <ImageGallery :images="good?.good.defaultImages || []" />
 
     <div class="text-green-600 font-bold text-xl my-4">
-      {{ hasPrice ? good?.stack?.[0]?.webPrice + ' ₽' : 'Цена не указана' }}
+      {{ hasPrice ? good?.stock?.[0]?.webPrice + ' ₽' : 'Цена не указана' }}
     </div>
 
     <div class="flex gap-4">
@@ -58,17 +58,17 @@ const isFavorite = computed(() =>
 )
 
 const hasPrice = computed(() => {
-  const stack = good.value?.stack
+  const stack = good.value?.stock
   return Array.isArray(stack) && stack.length > 0 && stack[0].webPrice != null
 })
 
 const canAddToCart = computed(() => {
-  const barcode = good.value?.stack?.[0]?.barcode
+  const barcode = good.value?.stock?.[0]?.barcode
   return Boolean(barcode && hasPrice.value)
 })
 
 function handleAddToCart() {
-  const barcode = good.value?.stack[0]?.barcode
+  const barcode = good.value?.stock[0]?.barcode
   if (barcode) {
     cart.addToCart(barcode)
     isAdded.value = true

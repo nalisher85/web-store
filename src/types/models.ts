@@ -31,7 +31,7 @@ export interface PharmGood {
 
 export interface GoodWithStack {
   good: PharmGood
-  stack: Stock[]
+  stock: Stock[]
 }
 
 export interface CategoryDataModel {

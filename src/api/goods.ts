@@ -14,7 +14,7 @@ export const fetchGoods = async (categoryId?: number): Promise<GoodWithStack[]> 
     // Модифицируем картинки, чтобы сразу отдавать готовые URL
   raw.forEach(item => {
     item.good.defaultImages = item.good.defaultImages.map(img => IMG_BASE_URL + img)
-    item.stack.forEach(stock => {
+    item.stock.forEach(stock => {
       stock.images = stock.images.map(img => IMG_BASE_URL + img)
     })
   })

@@ -19,7 +19,7 @@ export async function searchGoods(query: string, signal?: AbortSignal): Promise<
   // Подклеиваем абсолютные url картинок — как в fetchGoods
   raw.forEach(item => {
     item.good.defaultImages = item.good.defaultImages.map(img => IMG_BASE_URL + img)
-    item.stack.forEach((stock: any) => {
+    item.stock.forEach((stock: any) => {
       stock.images = (stock.images ?? []).map((img: string) => IMG_BASE_URL + img)
     })
   })
