@@ -46,8 +46,8 @@
         v-for="item in results"
         :key="item.good.id"
         class="py-3 hover:bg-gray-50 cursor-pointer"
-        @pointerdown="onItemPointerDown"     
-        @click="goToDetail(item.good.id)"   
+        @pointerdown="onItemPointerDown"
+        @click="goToDetail(item.good.id)"
       >
         <div class="flex items-center gap-3">
           <!-- Миниатюра 48x48 с плейсхолдером -->
@@ -64,26 +64,13 @@
 
           <!-- Текст -->
           <div class="min-w-0 flex-1">
-            <div class="font-medium truncate">{{ item.good.name }} </div>
+            <div class="font-medium truncate">{{ item.good.name }}</div>
             <div class="text-sm text-gray-600 truncate">
               {{ item.good.country || '—' }}
               <span v-if="minPrice(item) != null"> • {{ formatPrice(minPrice(item)!) }}</span>
             </div>
           </div>
 
-          <!-- Кнопка В корзину (как на деталке) -->
-          <div class="ml-2">
-            <button
-              type="button"
-              class="rounded-md border bg-white px-3 py-1.5 text-sm hover:bg-gray-50 active:translate-y-px"
-              :disabled="!hasFirstPrice(item) || isAdded(item.good.id)"
-              :class="(!hasFirstPrice(item) || isAdded(item.good.id)) ? 'opacity-40 cursor-not-allowed' : ''"
-              @click.stop="quickAdd(item)"
-              aria-label="Добавить в корзину"
-            >
-              {{ isAdded(item.good.id) ? 'Добавлено ✅' : 'В корзину' }}
-            </button>
-          </div>
         </div>
       </li>
     </ul>
@@ -95,19 +82,16 @@ import { ref, watch, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { searchGoods } from '@/api/search'
-import { useCartStore } from '@/stores/cartStore'
-import type { GoodWithStack, Stock } from '@/types/models'
+import type { GoodWithStock, Stock } from '@/types/models'
 import { useSearchStore } from '@/stores/searchStore'
 import { useBackButton } from "@/composables/useBackButton";
 
 useBackButton();
 
-
 const route = useRoute()
 const router = useRouter()
 const searchStore = useSearchStore()
 const { q, results } = storeToRefs(searchStore)
-const cart = useCartStore()
 
 const loading = ref(false)
 const inputEl = ref<HTMLInputElement | null>(null)
@@ -147,7 +131,7 @@ const fetchResults = async (query: string) => {
   try {
     const data = await searchGoods(query, currentAbort.signal)
     searchStore.setResults(data)
-    console.log("myLog data " + data)
+        console.log("myLog data " + data)
   } finally {
     loading.value = false
   }
@@ -180,33 +164,12 @@ const onItemPointerDown = (e: PointerEvent) => {
 }
 
 const goToDetail = (id: number) => {
+  // имя роута оставляю как у тебя в проекте; при необходимости поменяем на 'good'
   router.push({ name: 'GoodDetail', params: { id } })
 }
 
 const clearQuery = () => searchStore.clearAll()
 const onEnter = () => inputEl.value?.blur()
-
-/** ---- Быстрое добавление (как на детальной): “Добавлено ✅” на 1.5с ---- */
-const addedIds = ref<Set<number>>(new Set())
-const isAdded = (id: number) => addedIds.value.has(id)
-
-const firstBarcode = (it: GoodWithStack) => it.stock?.[0]?.barcode || ''
-const hasFirstPrice = (it: GoodWithStack) => it.stock?.[0]?.webPrice != null
-
-const quickAdd = (it: GoodWithStack) => {
-  const bc = firstBarcode(it)
-  if (!bc) return
-  cart.addToCart(bc)
-  // флажок «добавлено» на 1.5 сек
-  const s = new Set(addedIds.value)
-  s.add(it.good.id)
-  addedIds.value = s
-  setTimeout(() => {
-    const s2 = new Set(addedIds.value)
-    s2.delete(it.good.id)
-    addedIds.value = s2
-  }, 1500)
-}
 
 /** ---- Плейсхолдер/ошибки картинок ---- */
 const broken = ref<Set<number>>(new Set())
@@ -218,22 +181,22 @@ const markBroken = (id: number) => {
   }
 }
 const isBroken = (id: number) => broken.value.has(id)
-const hasImg = (it: GoodWithStack) =>
+const hasImg = (it: GoodWithStock) =>
   Array.isArray(it.good.defaultImages) && !!it.good.defaultImages[0]
-const firstImg = (it: GoodWithStack) => (hasImg(it) ? it.good.defaultImages[0] : '')
+const firstImg = (it: GoodWithStock) => (hasImg(it) ? it.good.defaultImages[0] : '')
 
-/** ---- Цена ---- */
-const minPrice = (it: GoodWithStack): number | null => {
+/** ---- Цена: минимальная среди вариантов с ценой и наличием ---- */
+const minPrice = (it: GoodWithStock): number | null => {
   const prices = (it.stock ?? [])
-    .map((s: Stock) => s.webPrice)
-    .filter((p): p is number => typeof p === 'number')
+    .filter((s: Stock) => (s.webPrice ?? 0) > 0 && (s.count ?? 0) > 0)
+    .map((s: Stock) => s.webPrice as number)
   return prices.length ? Math.min(...prices) : null
 }
 const formatPrice = (n: number) => {
   try {
-    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(n)
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'TJS', maximumFractionDigits: 0 }).format(n)
   } catch {
-    return `${n} ₽`
+    return `${n} TJS`
   }
 }
 </script>

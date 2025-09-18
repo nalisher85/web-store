@@ -1,3 +1,18 @@
+export namespace StockNS {
+  // Значение свойства варианта (зеркало sealed интерфейса в Kotlin).
+  // По умолчанию считаем дискриминатором ключ "type".
+  export type PropertyValue =
+    | { type: 'StringValue'; value: string }
+    | { type: 'NumberValue'; value: number }
+    | { type: 'IntValue'; value: number }
+    | { type: 'BooleanValue'; value: boolean };
+
+  export interface Property {
+    propertyName: string;
+    value: PropertyValue;
+  }
+}
+
 export interface Stock {
   id: number
   goodId: number
@@ -8,10 +23,11 @@ export interface Stock {
   sku: string
   updatedAt: number
   images: string[]
-  properties: Record<string, string>
+  extraProperties: Record<string, string>, //доп опциональные свойства
+  goodProperties: StockNS.Property[];
 }
 
-export interface PharmGood {
+export interface Good {
   id: number
   name: string
   country: string
@@ -21,18 +37,23 @@ export interface PharmGood {
   countInPack: number
   updatedAt: number
   defaultImages: string[]
-  certificateUrl?: string
-  productForm: string
-  measurementUnitInfo: string
-  needPrescription?: boolean
-  activeIngredients: string[]
-  activeIngredientsDosage: string[]
+  properties: GoodProperty[]
 }
 
-export interface GoodWithStack {
-  good: PharmGood
+export interface GoodWithStock {
+  good: Good
   stock: Stock[]
 }
+
+export interface GoodProperty {
+  name: string;
+  isRequired: boolean;
+  valueType: PropertyValueType;
+  /** только для valueType == STRING_LIST */
+  options?: string[] | null;
+}
+
+export type PropertyValueType = 'STRING' | 'NUMBER' | 'INT' | 'BOOLEAN' | 'STRING_LIST';
 
 export interface CategoryDataModel {
   id: number

@@ -1,28 +1,30 @@
 // src/api/search.ts
 import { api } from '@/api/axios'
-import type { GoodWithStack } from '@/types/models'
+import type { GoodWithStock } from '@/types/models'
 import { IMG_BASE_URL } from '@/config'
 
 /**
- * Поиск товаров на бэке.
- * Возвращает ту же модель, что и /telegram/goods
  * GET /telegram/goods/search?query=...
+ * Возвращает GoodWithStock[]
  */
-export async function searchGoods(query: string, signal?: AbortSignal): Promise<GoodWithStack[]> {
-  const response = await api.get('/telegram/goods/search', {
-    params: { query },
-    signal,
-  })
+export async function searchGoods(query: string, signal?: AbortSignal): Promise<GoodWithStock[]> {
+  const q = encodeURIComponent(query)
+  // ЯВНО добавляем query в URL (axios точно не потеряет параметр)
+  const url = `/telegram/goods/search?query=${q}`
 
-  const raw: GoodWithStack[] = response.data?.data ?? []
+  const resp = await api.get(url, { signal })
 
-  // Подклеиваем абсолютные url картинок — как в fetchGoods
-  raw.forEach(item => {
-    item.good.defaultImages = item.good.defaultImages.map(img => IMG_BASE_URL + img)
-    item.stock.forEach((stock: any) => {
-      stock.images = (stock.images ?? []).map((img: string) => IMG_BASE_URL + img)
+  // у тебя бэк отвечает обёрткой { statusCode, status, message, data }
+  const list: GoodWithStock[] = Array.isArray(resp.data?.data) ? resp.data.data : []
+
+  // Подклеиваем базу для картинок (как в fetchGoods)
+  const addBase = (img: string) => IMG_BASE_URL + img
+  list.forEach(item => {
+    item.good.defaultImages = (item.good.defaultImages ?? []).map(addBase)
+    item.stock.forEach(stock => {
+      stock.images = (stock.images ?? []).map(addBase)
     })
   })
 
-  return raw
+  return list
 }

@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchGoods, fetchGoodById } from '@/api/goods'
-import type { GoodWithStack } from '@/types/models'
+import type { GoodWithStock } from '@/types/models'
 
 export const useGoodsStore = defineStore('goods', () => {
-  const goods = ref<GoodWithStack[]>([])
-  const good = ref<GoodWithStack | null>(null)
+  const goods = ref<GoodWithStock[]>([])
+  const good = ref<GoodWithStock | null>(null)
   const loading = ref(false)
 
   const loadGoods = async (categoryId?: number) => {

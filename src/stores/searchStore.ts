@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
-import type { GoodWithStack } from '@/types/models'
+import type { GoodWithStock } from '@/types/models'
 
 export const useSearchStore = defineStore('search', {
   state: () => ({
     q: '' as string,                // введённый текст
-    results: [] as GoodWithStack[], // последние найденные товары
+    results: [] as GoodWithStock[], // последние найденные товары
     sessionId: null as string | null, // последний sid (идентификатор «сеанса» поиска)
   }),
   actions: {
     setQuery(q: string) {
       this.q = q
     },
-    setResults(list: GoodWithStack[]) {
+    setResults(list: GoodWithStock[]) {
       this.results = list
     },
     setSession(id: string | null) {

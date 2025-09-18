@@ -1,117 +1,107 @@
 <template>
-  <!-- Контейнер-обёртка для оверлея избранного -->
   <div class="relative">
-    <!-- ЕДИНЫЙ контейнер с рамкой: внутри и контент, и кнопка -->
     <div class="rounded-lg border bg-white shadow-sm overflow-hidden hover:bg-gray-50 transition">
-      <!-- Кликабельная часть (переход на детали) -->
-      <router-link :to="`/good/${good.good.id}`" class="block">
-        <!-- изображение -->
+      <router-link :to="`/good/${g.good.id}`" class="block">
+        <!-- Изображение -->
         <div class="w-full h-32 sm:h-36 flex items-center justify-center bg-gray-50 overflow-hidden">
           <img
-            v-if="imgToShow"
-            :src="imgToShow"
-            alt=""
+            v-if="cover"
+            :src="cover"
+            :alt="g.good.name"
             class="max-h-full object-contain"
+            loading="lazy"
             @error="onImgError"
           />
           <div v-else class="text-gray-400 text-sm">Нет изображения</div>
         </div>
 
-        <!-- текст -->
-        <div class="p-2">
-          <div class="text-sm font-semibold line-clamp-2">
-            {{ good.good.name }}
-          </div>
-          <div class="text-xs text-gray-500">
-            {{ good.good.country || '—' }}
+        <!-- Текстовая часть -->
+        <div class="p-3">
+          <div class="text-sm font-medium line-clamp-2 min-h-[2.5rem]">
+            {{ g.good.name }}
           </div>
 
-          <div class="text-right text-green-600 font-bold mt-1">
-            {{ priceText }}
+          <div class="mt-1.5 flex items-center justify-between gap-2 flex-nowrap min-w-0">
+            <span v-if="minPrice !== null" class="text-base font-semibold whitespace-nowrap">
+              от {{ formatPrice(minPrice) }}
+            </span>
+            <span v-else class="text-gray-400 text-sm whitespace-nowrap">Цена уточняется</span>
+
+            <!-- бейдж показываем только если вариантов > 1 -->
+            <span
+              v-if="showVariants"
+              class="shrink-0 whitespace-nowrap text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"
+            >
+              {{ variantsLabel }}
+            </span>
           </div>
         </div>
       </router-link>
-
-      <!-- Кнопка ВНУТРИ рамки -->
-      <div class="p-2 pt-0">
-        <button
-          type="button"
-          class="w-full rounded-md border bg-white px-3 py-2 text-sm hover:bg-gray-50 active:translate-y-px"
-          :disabled="!hasPrice || isAdded"
-          :class="(!hasPrice || isAdded) ? 'opacity-40 cursor-not-allowed' : ''"
-          @click.stop="addToCart"
-        >
-          {{ isAdded ? 'Добавлено ✅' : 'В корзину' }}
-        </button>
-      </div>
     </div>
 
-    <!-- избранное (оверлей), клики не ведут на детали -->
+    <!-- Избранное -->
     <button
-      @click.stop="toggle"
+      v-if="favoritesAvailable"
+      @click.stop="toggleFavorite"
       class="absolute top-2 right-2 z-10 rounded-full bg-white/90 shadow px-2 py-1"
       aria-label="Избранное"
-      :aria-pressed="favorites.isFavorite(good.good.id)"
+      :aria-pressed="isFav"
     >
-      <span v-if="favorites.isFavorite(good.good.id)">❤️</span>
+      <span v-if="isFav">❤️</span>
       <span v-else>🤍</span>
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { GoodWithStack } from '@/types/models'
+import { computed } from 'vue'
+import type { GoodWithStock, Stock } from '@/types/models'
 import { useFavoritesStore } from '@/stores/favoritesStore'
-import { useCartStore } from '@/stores/cartStore'
-import { ref, watch, computed } from 'vue'
 
-const props = defineProps<{ good: GoodWithStack }>()
+const props = defineProps<{ good: GoodWithStock }>()
+const g = computed(() => props.good)
 
-const favorites = useFavoritesStore()
-const cart = useCartStore()
-
-/* Картинка с graceful degradation */
-const imgIndex = ref(0)
-const imgToShow = ref<string | null>(null)
-const onImgError = () => {
-  const list = (props.good.good.defaultImages ?? []).filter(Boolean)
-  if (imgIndex.value < list.length - 1) {
-    imgIndex.value++
-    imgToShow.value = list[imgIndex.value] ?? null
-  } else {
-    imgToShow.value = null
-  }
+/** Favorites */
+let favorites: ReturnType<typeof useFavoritesStore> | null = null
+try {
+  favorites = useFavoritesStore()
+} catch {
+  favorites = null
 }
-watch(
-  () => props.good.good.defaultImages,
-  () => {
-    const list = (props.good.good.defaultImages ?? []).filter(Boolean)
-    imgIndex.value = 0
-    imgToShow.value = list[0] ?? null
-  },
-  { immediate: true }
-)
+const favoritesAvailable = computed(() => !!favorites)
+const isFav = computed(() => (favorites ? favorites.isFavorite(g.value.good.id) : false))
+const toggleFavorite = () => { if (favorites) favorites.toggleFavorite(g.value.good.id) }
 
-/* Цена/штрихкод — как на деталке */
-const hasPrice = computed(() => props.good.stock?.[0]?.webPrice != null)
-const priceText = computed(() => {
-  const p = props.good.stock?.[0]?.webPrice
-  return p != null ? `${p} ₽` : 'Цена не указана'
+/** Картинка: сперва из товара, иначе из первого варианта */
+const cover = computed(() => {
+  const fromGood = g.value.good?.defaultImages?.[0]
+  if (fromGood) return fromGood
+  return g.value.stock?.[0]?.images?.[0] ?? null
 })
-const firstBarcode = computed(() => props.good.stock?.[0]?.barcode || '')
-
-/* Поведение кнопки: “Добавлено ✅” на 1.5с */
-const isAdded = ref(false)
-const addToCart = () => {
-  const bc = firstBarcode.value
-  if (!bc) return
-  cart.addToCart(bc)
-  isAdded.value = true
-  setTimeout(() => (isAdded.value = false), 1500)
+const onImgError = (e: Event) => {
+  (e.target as HTMLImageElement).style.display = 'none'
 }
 
-/* Избранное */
-const toggle = () => {
-  favorites.toggleFavorite(props.good.good.id)
+/** “Цена от …”: минимальная среди вариантов с webPrice > 0 и count > 0 */
+const minPrice = computed<number | null>(() => {
+  const prices = (g.value.stock ?? [])
+    .filter((s: Stock) => (s.webPrice ?? 0) > 0 && (s.count ?? 0) > 0)
+    .map((s: Stock) => s.webPrice as number)
+  if (!prices.length) return null
+  return prices.reduce((m, p) => (p < m ? p : m), prices[0])
+})
+const variantsLabel = computed(() => `${g.value.stock?.length ?? 0} вар.`)
+const showVariants = computed(() => (g.value.stock?.length ?? 0) > 1)
+
+function formatPrice(value: number) {
+  try {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'TJS',
+      maximumFractionDigits: 0,
+    }).format(value)
+  } catch {
+    return String(Math.round(value))
+  }
 }
 </script>
