@@ -4,21 +4,33 @@ import { useOrderStore } from '@/stores/orderStore'
 import { computed } from 'vue'
 import type { OrderDetail } from '@/types/order'
 import { RouterLink } from 'vue-router'
-import { useBackButton } from "@/composables/useBackButton";
-
-useBackButton();
 
 const orderStore = useOrderStore()
 const { result, lastOrder } = storeToRefs(orderStore)
 
 const order = computed(() => lastOrder.value)
 
-const total = computed(() =>
-  order.value?.orderDetails.reduce(
-    (sum: number, item: OrderDetail) => sum + item.price * item.orderCount,
-    0
-  ) ?? 0
+const total = computed(
+  () =>
+    order.value?.orderDetails.reduce(
+      (sum: number, item: OrderDetail) => sum + (item.price || 0) * (item.orderCount || 0),
+      0,
+    ) ?? 0,
 )
+
+// форматирование TJS с фолбэком
+function formatTJS(n: number) {
+  try {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'TJS',
+      maximumFractionDigits: 0,
+    }).format(n)
+  } catch {
+    // на случай окружений без поддержки TJS
+    return `${Math.round(n)} TJS`
+  }
+}
 </script>
 
 <template>
@@ -38,21 +50,34 @@ const total = computed(() =>
       <h2 class="font-semibold mb-2 text-left">📦 Товары:</h2>
       <ul class="text-left text-sm border rounded p-4 bg-white mb-4">
         <li v-for="(item, index) in order?.orderDetails" :key="index" class="mb-2">
-          <span class="font-medium">{{ item.productName }}</span> —
-          {{ item.orderCount }} шт × {{ item.price }} ₽ =
-          <span class="text-green-600 font-semibold">{{ item.orderCount * item.price }} ₽</span>
+          <span class="font-medium">{{ item.productName }}</span>
+          — {{ item.orderCount }} шт × {{ formatTJS(item.price) }} =
+          <span class="text-green-600 font-semibold">
+            {{ formatTJS(item.orderCount * item.price) }}
+          </span>
         </li>
       </ul>
 
       <div class="text-right text-lg font-bold">
-        Итого: {{ total }} ₽
+        Итого: {{ formatTJS(total) }}
       </div>
 
-      <!-- Стиль кнопки при успехе -->
-      <router-link to="/"
-        class="inline-block mt-6 px-6 py-3 rounded bg-indigo-600 !text-white font-semibold shadow hover:bg-indigo-700 transition">
-        Вернуться в каталог
-      </router-link>
+      <!-- Кнопки: адаптивный ряд/колонка с отступом -->
+      <div class="mt-6 flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4">
+        <RouterLink
+          to="/"
+          class="inline-flex w-full sm:w-auto justify-center rounded-lg bg-indigo-600 text-white px-5 py-3 font-semibold hover:bg-indigo-700 transition"
+        >
+          Вернуться в каталог
+        </RouterLink>
+
+        <RouterLink
+          to="/orders"
+          class="inline-flex w-full sm:w-auto justify-center rounded-lg bg-blue-600 text-white px-5 py-3 font-semibold hover:bg-blue-700 transition"
+        >
+          Перейти к заказам
+        </RouterLink>
+      </div>
     </template>
 
     <template v-else>
@@ -60,17 +85,12 @@ const total = computed(() =>
       <p class="text-gray-600 mb-4">Попробуйте позже</p>
       <p class="text-red-500">{{ result?.error }}</p>
 
-      <!-- Стиль кнопки при ошибке -->
-      <router-link to="/"
-        class="inline-block mt-6 px-6 py-3 rounded bg-gray-200 text-black font-semibold hover:bg-gray-300 transition">
+      <RouterLink
+        to="/"
+        class="inline-flex mt-6 px-6 py-3 rounded-lg bg-gray-200 text-black font-semibold hover:bg-gray-300 transition"
+      >
         Вернуться в каталог
-      </router-link>
+      </RouterLink>
     </template>
-
-    <RouterLink v-if="orderStore.result?.success" to="/orders"
-      class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-      Перейти к заказам
-    </RouterLink>
-
   </div>
 </template>

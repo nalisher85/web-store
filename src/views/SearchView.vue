@@ -18,7 +18,6 @@
           @blur="focused = false"
           @keydown.enter.prevent="onEnter"
         />
-        <!-- Кнопка очистки -->
         <button
           v-if="q"
           type="button"
@@ -28,7 +27,6 @@
         >
           ×
         </button>
-        <!-- Иконка лупы -->
         <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 opacity-60" viewBox="0 0 24 24" fill="none">
           <path d="M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm9 17-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
@@ -53,11 +51,11 @@
           <!-- Миниатюра 48x48 с плейсхолдером -->
           <div class="h-12 w-12 flex-shrink-0 rounded overflow-hidden bg-gray-50 flex items-center justify-center">
             <img
-              v-if="hasImg(item) && !isBroken(item.good.id)"
-              :src="firstImg(item)"
+              v-if="currentImg(item)"
+              :src="currentImg(item)!"
               alt="image"
               class="h-full w-full object-cover"
-              @error="markBroken(item.good.id)"
+              @error="onImgError(item)"
             />
             <span v-else class="text-gray-400 text-[10px] leading-none text-center select-none">Нет фото</span>
           </div>
@@ -70,7 +68,6 @@
               <span v-if="minPrice(item) != null"> • {{ formatPrice(minPrice(item)!) }}</span>
             </div>
           </div>
-
         </div>
       </li>
     </ul>
@@ -115,7 +112,6 @@ onMounted(() => {
   if (sidParam && sidParam !== searchStore.sessionId) {
     searchStore.clearAll()
     searchStore.setSession(sidParam)
-    // убираем sid из адреса, не трогая роутер
     try {
       const url = new URL(window.location.href)
       url.searchParams.delete('sid')
@@ -131,7 +127,6 @@ const fetchResults = async (query: string) => {
   try {
     const data = await searchGoods(query, currentAbort.signal)
     searchStore.setResults(data)
-        console.log("myLog data " + data)
   } finally {
     loading.value = false
   }
@@ -164,34 +159,47 @@ const onItemPointerDown = (e: PointerEvent) => {
 }
 
 const goToDetail = (id: number) => {
-  // имя роута оставляю как у тебя в проекте; при необходимости поменяем на 'good'
   router.push({ name: 'GoodDetail', params: { id } })
 }
 
 const clearQuery = () => searchStore.clearAll()
 const onEnter = () => inputEl.value?.blur()
 
-/** ---- Плейсхолдер/ошибки картинок ---- */
-const broken = ref<Set<number>>(new Set())
-const markBroken = (id: number) => {
-  if (!broken.value.has(id)) {
-    const s = new Set(broken.value)
-    s.add(id)
-    broken.value = s
-  }
-}
-const isBroken = (id: number) => broken.value.has(id)
-const hasImg = (it: GoodWithStock) =>
-  Array.isArray(it.good.defaultImages) && !!it.good.defaultImages[0]
-const firstImg = (it: GoodWithStock) => (hasImg(it) ? it.good.defaultImages[0] : '')
+/* ===================== КАРТИНКИ ===================== */
 
-/** ---- Цена: минимальная среди вариантов с ценой и наличием ---- */
+/** индекс текущей показанной картинки по товару (good.id) */
+const imgIndexByGood = ref<Record<number, number>>({})
+
+/** кандидаты картинок: сначала good.defaultImages, затем все stock.images */
+const imageCandidates = (it: GoodWithStock): string[] => {
+  const fromGood = Array.isArray(it.good.defaultImages) ? it.good.defaultImages : []
+  const fromStock = (it.stock ?? []).flatMap(s => Array.isArray(s.images) ? s.images : [])
+  return [...fromGood, ...fromStock].filter(Boolean) as string[]
+}
+
+/** текущая картинка; если индекса нет или он «выбежал» — считаем, что картинки нет */
+const currentImg = (it: GoodWithStock): string | '' => {
+  const arr = imageCandidates(it)
+  const idx = imgIndexByGood.value[it.good.id] ?? 0
+  return arr[idx] ?? ''
+}
+
+/** при ошибке загрузки переключаемся на следующего кандидата */
+const onImgError = (it: GoodWithStock) => {
+  const id = it.good.id
+  const arr = imageCandidates(it)
+  const next = (imgIndexByGood.value[id] ?? 0) + 1
+  imgIndexByGood.value = { ...imgIndexByGood.value, [id]: next < arr.length ? next : -1 }
+}
+
+/* ===================== ЦЕНА ===================== */
 const minPrice = (it: GoodWithStock): number | null => {
   const prices = (it.stock ?? [])
     .filter((s: Stock) => (s.webPrice ?? 0) > 0 && (s.count ?? 0) > 0)
-    .map((s: Stock) => s.webPrice as number)
+    .map((s: Stock) => Number(s.webPrice))
   return prices.length ? Math.min(...prices) : null
 }
+
 const formatPrice = (n: number) => {
   try {
     return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'TJS', maximumFractionDigits: 0 }).format(n)

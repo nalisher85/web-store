@@ -9,7 +9,6 @@ import router from './router'
 import { primeTmaInitData } from '@/utils/tma'  
 import WebApp from "@twa-dev/sdk";
 
-
 // Прогреваем initData (без await — как и раньше в проекте)
 try {
   primeTmaInitData();
@@ -34,5 +33,47 @@ pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 app.use(router)
 
+/* ========= ОБРАБОТКА startapp (deep link) =========
+   Поддерживаем:
+   - Telegram WebApp: WebApp.initDataUnsafe.start_param
+   - Браузер/отладка: ?startapp=good_123 в URL
+   Редирект делаем один раз за сессию.
+*/
+function getStartParam(): string | null {
+  try {
+    const fromTg = (window as any)?.Telegram?.WebApp?.initDataUnsafe?.start_param
+    if (fromTg) return String(fromTg)
+  } catch {}
+  try {
+    const sp = new URLSearchParams(window.location.search)
+    return sp.get('startapp')
+  } catch {}
+  return null
+}
 
-app.mount('#app')
+async function handleDeepLinkOnce() {
+  const FLAG = 'tma_start_param_handled'
+  if (sessionStorage.getItem(FLAG)) return
+
+  const start = getStartParam()
+  if (!start) return
+
+  if (start.startsWith('good_')) {
+    const id = Number(start.slice('good_'.length))
+    if (!Number.isNaN(id)) {
+      sessionStorage.setItem(FLAG, '1')
+      await router.isReady()
+
+      // кладём Home как базу (replace, чтобы не было дублей)
+      await router.replace({ name: 'Home' }).catch(() => {})
+      // потом пушим Detail — теперь back вернёт на Home
+      router.push({ name: 'GoodDetail', params: { id } }).catch(() => {})
+    }
+  }
+}
+
+// Важно: сначала обработать диплинк (включая router.isReady), потом монтировать
+;(async () => {
+  await handleDeepLinkOnce()
+  app.mount('#app')
+})()

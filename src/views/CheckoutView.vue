@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch, toRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
 import { useGoodsStore } from '@/stores/goodsStore'
@@ -95,14 +95,30 @@ const goodsStore = useGoodsStore()
 const orderStore = useOrderStore()
 const router = useRouter()
 
+/** Всегда подтягиваем фактические цены/названия из корзины */
+onMounted(() => {
+  cartStore.syncStockDetails()
+})
+
+/** Позиции заказа: приоритет — данные корзины (надёжные), потом goodsStore */
 const items = computed(() =>
   cartStore.items.map(ci => {
-    const good = goodsStore.allGoods.find(g => g.stock.some(s => s.barcode === ci.barcode))
-    const stock = good?.stock.find(s => s.barcode === ci.barcode)
+    const fromCart = cartStore.stockItemsMap[ci.barcode]
+    const fromGoods = goodsStore.allGoods.find(g => g.stock.some(s => s.barcode === ci.barcode))
+    const fromGoodsStock = fromGoods?.stock.find(s => s.barcode === ci.barcode)
+
+    console.log('myLog computed')
+      console.log('[cart] items:', cartStore.items)
+    console.log('[cart] map:', toRaw(cartStore.stockItemsMap))           // снять Proxy
+    console.table(Object.values(toRaw(cartStore.stockItemsMap) ?? {}))   // табличкой
+
+    const name = fromCart?.name ?? fromGoods?.good.name ?? 'Товар'
+    const price = (fromCart?.price ?? fromGoodsStock?.webPrice ?? 0)
+
     return {
-      productName: good?.good.name ?? 'Товар',
+      productName: name,
       productProperties: '',
-      price: stock?.webPrice ?? 0,
+      price,
       orderCount: ci.count,
       packedCount: 0,
       purchasedCount: 0,
@@ -186,12 +202,13 @@ onMounted(() => {
   vv = window.visualViewport as any
   if (vv) {
     baseH = vv.height
-   ;['resize','scroll'].forEach(e => vv!.addEventListener(e, onVV))
+    ;['resize','scroll'].forEach(e => vv!.addEventListener(e, onVV))
   } else {
     window.addEventListener('focusin', () => (kb.value = 320))
     window.addEventListener('focusout', () => (kb.value = 0))
   }
 })
+
 onBeforeUnmount(() => {
   if (vv) ['resize','scroll'].forEach(e => vv!.removeEventListener(e, onVV))
   else {

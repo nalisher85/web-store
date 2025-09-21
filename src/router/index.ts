@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw, createWebHashHistory } from 'vue-router'
+import OrderConfirmation from '@/views/OrderConfirmation.vue'
 
 
 export const routes: Array<RouteRecordRaw> = [
@@ -11,6 +12,7 @@ export const routes: Array<RouteRecordRaw> = [
     path: '/good/:id',
     name: 'GoodDetail',
     component: () => import('@/views/GoodDetailView.vue'),
+    props: true,
   },
   {
     path: '/orders',
@@ -34,10 +36,10 @@ export const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/order-confirmation',
-    name: 'order-confirmation',
-    component: () => import('@/views/OrderConfirmation.vue'),
+    name: 'OrderConfirmation',
+    component: OrderConfirmation,
   },
-    {
+  {
     path: '/search',
     name: 'Search',
     component: () => import('@/views/SearchView.vue'),

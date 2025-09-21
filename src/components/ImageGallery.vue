@@ -1,5 +1,12 @@
 <template>
-  <div class="relative w-full flex flex-col items-center">
+  <div
+    class="relative w-full flex flex-col items-center select-none"
+    @pointerdown="onDown"
+    @pointermove="onMove"
+    @pointerup="onUp"
+    @pointercancel="onUp"
+    @pointerleave="onUp"
+  >
     <div class="relative w-full flex justify-center items-center">
       <!-- ⬅ Кнопка назад -->
       <button
@@ -79,4 +86,31 @@ function prev() {
 watch(currentImage, () => {
   showImage.value = true
 })
+
+/* ===== Логика свайпа ===== */
+let startX = 0
+let dx = 0
+let dragging = false
+const SWIPE_THRESHOLD = 40 // порог в пикселях
+
+function onDown(e: PointerEvent) {
+  startX = e.clientX
+  dx = 0
+  dragging = true
+}
+
+function onMove(e: PointerEvent) {
+  if (!dragging) return
+  dx = e.clientX - startX
+}
+
+function onUp() {
+  if (!dragging) return
+  if (Math.abs(dx) > SWIPE_THRESHOLD) {
+    if (dx < 0) next()
+    else prev()
+  }
+  dragging = false
+  dx = 0
+}
 </script>

@@ -22,16 +22,13 @@
       <div v-for="order in filteredOrders" :key="order.id" class="border rounded-xl p-4 shadow-sm bg-white space-y-2">
         <div class="flex justify-between items-center">
           <span class="text-sm text-gray-500">
-            Заказ №{{ order.id }} от {{ formatDate(order.createdAt) }}
+            Заказ №{{ order.id }} от {{ formatDateTime(order.createdAt) }}
           </span>
 
-           <span
-            class="text-[11px] leading-none px-2 py-1 rounded-full max-w-[96px] truncate text-center"
-            :class="statusClass(order.orderStatus)"
-          >
+          <span class="text-[11px] leading-none px-2 py-1 rounded-full max-w-[96px] truncate text-center"
+            :class="statusClass(order.orderStatus)">
             {{ getStatusLabel(order.orderStatus) }}
           </span>
-
         </div>
 
         <div class="divide-y">
@@ -39,13 +36,13 @@
             <span>
               {{ item.productName }} × {{ formatQuantity(item) }}
             </span>
-            <span>{{ item.price * item.orderCount }} ₽</span>
+            <span>{{ fmtTJS((Number(item.price) || 0) * (Number(item.orderCount) || 0)) }}</span>
           </div>
         </div>
 
         <div class="flex justify-between items-center pt-2 font-semibold">
           <span>Итого:</span>
-          <span>{{ getTotal(order) }} ₽</span>
+          <span>{{ fmtTJS(getTotal(order)) }}</span>
         </div>
 
         <button v-if="order.orderStatus === 'NEW' && order.id !== undefined" @click="confirmCancel(order.id)"
@@ -71,7 +68,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -79,10 +75,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useOrderStore } from '@/stores/orderStore'
 import type { Order, OrderStatus, OrderDetail } from '@/types/order'
-import { useBackButton } from "@/composables/useBackButton";
+import { useBackButton } from "@/composables/useBackButton"
 
-useBackButton();
+useBackButton()
 
+// формат суммы в TJS
+const fmtTJS = (n: number) =>
+  new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'TJS', maximumFractionDigits: 0 }).format(n)
 
 // 🔧 Фильтрация
 type FilterOption = { value: OrderStatus | 'ALL'; label: string }
@@ -126,28 +125,29 @@ const confirmCancel = (orderId: number) => {
   cancelDialogId.value = orderId
 }
 
-const formatDate = (ts: number) =>
-  new Date(ts).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+const formatDateTime = (ts: number) => {
+  const d = new Date(ts)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  return `${dd}.${mm}.${yyyy} г. в ${hh}:${mi}`
+}
 
 const getTotal = (order: Order) =>
-  order.orderDetails.reduce((sum, d) => sum + d.price * d.orderCount, 0)
+  order.orderDetails.reduce(
+    (sum, d) => sum + (Number(d.price) || 0) * (Number(d.orderCount) || 0),
+    0
+  )
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'NEW':
-      return 'Новый'
-    case 'IN_PROGRESS':
-      return 'В обработке'
-    case 'DONE':
-      return 'Завершён'
-    case 'CANCELED':
-      return 'Отменён'
-    default:
-      return status
+    case 'NEW': return 'Новый'
+    case 'IN_PROGRESS': return 'В обработке'
+    case 'DONE': return 'Завершён'
+    case 'CANCELED': return 'Отменён'
+    default: return status
   }
 }
 
@@ -162,22 +162,14 @@ const statusClass = (status: string) => {
 
 const filteredOrders = computed(() => {
   if (selectedFilter.value === 'ALL') return orders.value
-  return orders.value.filter((o) => o.orderStatus === selectedFilter.value)
+  return orders.value.filter(o => o.orderStatus === selectedFilter.value)
 })
 
 const formatQuantity = (item: OrderDetail): string => {
   const { orderCount, packedCount, purchasedCount } = item
-
   const parts: string[] = [`${orderCount}`]
-
-  if (packedCount !== null && packedCount !== orderCount) {
-    parts.push(`${packedCount} уп.`)
-  }
-
-  if (purchasedCount !== null && purchasedCount !== orderCount) {
-    parts.push(`${purchasedCount} куп.`)
-  }
-
+  if (packedCount !== null && packedCount !== orderCount) parts.push(`${packedCount} уп.`)
+  if (purchasedCount !== null && purchasedCount !== orderCount) parts.push(`${purchasedCount} куп.`)
   return parts.join(' / ')
 }
 

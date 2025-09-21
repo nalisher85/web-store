@@ -74,3 +74,12 @@ export function clearTmaInitData(): void {
   CACHED_INIT_DATA = null
   try { sessionStorage.removeItem('__TMA_INIT_DATA') } catch {}
 }
+
+export function getStartParam(): string | null {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    return tg?.initDataUnsafe?.start_param || null
+  } catch {
+    return null
+  }
+}

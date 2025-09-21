@@ -1,7 +1,6 @@
 // src/api/search.ts
 import { api } from '@/api/axios'
 import type { GoodWithStock } from '@/types/models'
-import { IMG_BASE_URL } from '@/config'
 
 /**
  * GET /telegram/goods/search?query=...
@@ -18,7 +17,7 @@ export async function searchGoods(query: string, signal?: AbortSignal): Promise<
   const list: GoodWithStock[] = Array.isArray(resp.data?.data) ? resp.data.data : []
 
   // Подклеиваем базу для картинок (как в fetchGoods)
-  const addBase = (img: string) => IMG_BASE_URL + img
+  const addBase = (img: string) => img
   list.forEach(item => {
     item.good.defaultImages = (item.good.defaultImages ?? []).map(addBase)
     item.stock.forEach(stock => {

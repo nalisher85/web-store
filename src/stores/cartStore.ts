@@ -2,7 +2,6 @@
 import { defineStore } from 'pinia'
 import { fetchStockItemsByBarcodes, type StockItem } from '@/api/products'
 import type { ProductStockNetworkModel } from '@/types/product'
-import { IMG_BASE_URL } from '@/config' 
 
 export interface CartItem {
     barcode: string
@@ -29,7 +28,7 @@ export const useCartStore = defineStore('cart', {
                         const localImage = item.images?.[0]
                         const fallbackImage = item.product?.defaultImages?.[0]
                         const imageFile = localImage || fallbackImage || ''
-                        const imageUrl = imageFile ? `${IMG_BASE_URL}${imageFile}` : ''
+                        const imageUrl = imageFile ? `${imageFile}` : ''
         
                         return [
                             item.barcode,
