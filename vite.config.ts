@@ -18,8 +18,14 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
-   server: {
-    port: 5173, // указываем фиксированный порт
-    strictPort: true, // НЕ переключаться на другой порт, если 5173 занят
+  server: {
+    port: 5173,
+    strictPort: true,
   },
+  build: {
+    outDir: 'dist',      // КУДА складывать билд
+    assetsDir: 'assets', // Папка ассетов внутри outDir
+    emptyOutDir: true,   // Перед билдом чистить dist/
+  },
+  // НЕ указывать outDir: '.' и не трогать assetsDir в корень!
 })

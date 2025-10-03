@@ -8,12 +8,16 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import router from './router'
 import { primeTmaInitData } from '@/utils/tma'  
 import WebApp from "@twa-dev/sdk";
+import { initTmaUx } from "@/utils/tmaBootstrap";
 
-// Прогреваем initData (без await — как и раньше в проекте)
+// Если хочешь — укажи ссылку на Main Mini App, чтобы из "внутренней" кнопки гарантировать фуллскрин редиректом
+const STARTAPP_LINK = "https://t.me/ali_retail_bot?startapp=1" // пример: "https://t.me/<bot_username>/<appname>?startapp=..."
+
 try {
   primeTmaInitData();
+  initTmaUx({ fallbackStartAppLink: STARTAPP_LINK });
 } catch (e) {
-  console.warn("[TMA] primeTmaInitData error:", e);
+  console.warn("[TMA] init bootstrap error:", e);
 }
 
 // Сообщаем Telegram, что интерфейс готов
