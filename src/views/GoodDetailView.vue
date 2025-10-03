@@ -44,36 +44,36 @@
       </p>
     </div>
 
-<!-- Модификации -->
-<section v-if="hasMoreThenOne" class="mb-4">
-  <h2 class="font-semibold text-lg mb-2">Модификации</h2>
+    <!-- Модификации -->
+    <section v-if="hasMoreThenOne" class="mb-4">
+      <h2 class="font-semibold text-lg mb-2">Модификации</h2>
 
-  <div class="flex flex-wrap gap-2">
-    <button
-      v-for="(s, idx) in good!.stock"
-      :key="s.barcode || idx"
-      type="button"
-      @click="selectVariant(idx)"
-      class="rounded-full border max-w-full transition hover:bg-gray-50"
-      :class="idx === selectedIndex
-        ? 'bg-indigo-600 text-white border-indigo-600'
-        : 'bg-white text-gray-800 border-gray-200'"
-      aria-label="Выбрать модификацию"
-    >
-      <!-- ЗАДАЁМ ЖЁСТКИЕ ОТСТУПЫ ВНУТРИ ЧИПСЫ -->
-      <div class="flex items-center w-full gap-3 py-3 pl-6 pr-5">
-        <!-- Текст варианта -->
-        <span class="flex-1 min-w-0 break-words leading-normal text-left">
-          {{ variantLabel(s) }}
-        </span>
-        <!-- Цена -->
-        <span class="shrink-0 text-sm opacity-80">
-          {{ formatPrice(s.webPrice ?? 0) }}
-        </span>
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="(s, idx) in good!.stock"
+          :key="s.barcode || idx"
+          type="button"
+          @click="selectVariant(idx)"
+          class="rounded-full border max-w-full transition hover:bg-gray-50"
+          :class="idx === selectedIndex
+            ? 'bg-indigo-600 text-white border-indigo-600'
+            : 'bg-white text-gray-800 border-gray-200'"
+          aria-label="Выбрать модификацию"
+        >
+          <!-- ЗАДАЁМ ЖЁСТКИЕ ОТСТУПЫ ВНУТРИ ЧИПСЫ -->
+          <div class="flex items-center w-full gap-3 py-3 pl-6 pr-5">
+            <!-- Текст варианта -->
+            <span class="flex-1 min-w-0 break-words leading-normal text-left">
+              {{ variantLabel(s) }}
+            </span>
+            <!-- Цена -->
+            <span class="shrink-0 text-sm opacity-80">
+              {{ formatPrice(s.webPrice ?? 0) }}
+            </span>
+          </div>
+        </button>
       </div>
-    </button>
-  </div>
-</section>
+    </section>
 
     <!-- Описание -->
     <section v-if="good?.good.description" class="mt-4">
@@ -101,6 +101,34 @@
       >
         {{ selectedStock ? `В корзину · ${formatPrice(selectedStock.webPrice ?? 0)}` : 'В корзину' }}
       </button>
+    </div>
+
+    <!-- Модалка «Поделиться» (Android / без navigator.share) -->
+    <div
+      v-if="showShareModal"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @click.self="showShareModal = false"
+    >
+      <div class="bg-white rounded-xl p-4 w-72 shadow-lg">
+        <h3 class="font-semibold text-lg mb-3">Поделиться</h3>
+        <div class="flex flex-col gap-2">
+          <button @click="openTelegramShare" class="py-2 px-3 border rounded hover:bg-gray-50">
+            Telegram
+          </button>
+          <button @click="openWhatsAppShare" class="py-2 px-3 border rounded hover:bg-gray-50">
+            WhatsApp
+          </button>
+          <button @click="copyLink" class="py-2 px-3 border rounded hover:bg-gray-50">
+            Скопировать ссылку
+          </button>
+        </div>
+        <button
+          @click="showShareModal = false"
+          class="mt-4 w-full py-2 px-3 border rounded bg-gray-100 hover:bg-gray-200"
+        >
+          Отмена
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -173,27 +201,68 @@ watch(selectedStock, (s) => setText(s?.webPrice != null ? `В корзину · 
 const BOT_USERNAME = 'ali_retail_bot'
 const deepLink = computed(() => good.value?.good.id ? `https://t.me/${BOT_USERNAME}?startapp=good_${good.value.good.id}` : '')
 const shareHint = ref('')
-function showShareHint(msg: string) { shareHint.value = msg; window.setTimeout(() => (shareHint.value = ''), 2000) }
+const showShareModal = ref(false)
+
+function showShareHint(msg: string) {
+  shareHint.value = msg
+  window.setTimeout(() => (shareHint.value = ''), 2000)
+}
+
 async function copyLink() {
   if (!deepLink.value) return
-  try { await navigator.clipboard.writeText(deepLink.value); showShareHint('Ссылка скопирована') }
-  catch { showShareHint('Скопируйте ссылку: ' + deepLink.value) }
-}
-async function openTelegramShare() {
-  if (!deepLink.value) return false
-  const url = `https://t.me/share/url?url=${encodeURIComponent(deepLink.value)}&text=${encodeURIComponent(good.value?.good.name || 'Товар')}`
-  try { WebApp?.openTelegramLink ? WebApp.openTelegramLink(url) : window.open(url, '_blank'); return true } catch { return false }
-}
-async function shareProduct() {
-  if (!deepLink.value) return
-  const title = good.value?.good.name || 'Товар'
-  const text = `Посмотри: ${title}`
-  if (navigator.share) {
-    try { await navigator.share({ title, text, url: deepLink.value }); showShareHint('Ссылка отправлена'); return }
-    catch (e: any) { if (e?.name === 'AbortError') return }
+  try {
+    await navigator.clipboard.writeText(deepLink.value)
+    showShareHint('Ссылка скопирована')
+  } catch {
+    showShareHint('Скопируйте ссылку: ' + deepLink.value)
   }
-  if (await openTelegramShare()) return
-  await copyLink()
+  showShareModal.value = false
+}
+
+async function openTelegramShare() {
+  if (!deepLink.value) return
+  const url = `https://t.me/share/url?url=${encodeURIComponent(deepLink.value)}&text=${encodeURIComponent(good.value?.good.name || 'Товар')}`
+
+  try {
+    if ((WebApp as any)?.openTelegramLink) {
+      (WebApp as any).openTelegramLink(url)
+    } else {
+      window.open(url, '_blank')
+    }
+  } finally {
+    showShareModal.value = false
+  }
+}
+
+async function openWhatsAppShare() {
+  if (!deepLink.value) return
+  const text = encodeURIComponent(`${good.value?.good.name || 'Товар'}\n${deepLink.value}`)
+  const url = `https://wa.me/?text=${text}`
+
+  try {
+    window.open(url, '_blank')
+  } finally {
+    showShareModal.value = false
+  }
+}
+
+async function shareProduct() {
+  const title = good.value?.good.name || 'Товар'
+
+  // iOS / современные браузеры: системное окно «Поделиться»
+  if (typeof navigator.share === 'function') {
+    try {
+      await navigator.share({ title, text: title, url: deepLink.value })
+      showShareHint('Ссылка отправлена')
+      return
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return
+      // не удалось — упадём в модалку
+    }
+  }
+
+  // Android / без Web Share API: наша модалка
+  showShareModal.value = true
 }
 
 /* Данные */
