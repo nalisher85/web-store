@@ -36,5 +36,5 @@ export class Category {
     return result
   }
 
-  static root = new Category(0, 'root')
+  static root = new Category(0, 'Все')
 }
