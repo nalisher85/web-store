@@ -32,11 +32,16 @@
         </div>
 
         <div class="divide-y">
-          <div v-for="item in order.orderDetails" :key="item.barcode" class="flex justify-between py-1 text-sm">
-            <span>
-              {{ item.productName }} × {{ formatQuantity(item) }}
-            </span>
-            <span>{{ fmtTJS((Number(item.price) || 0) * (Number(item.orderCount) || 0)) }}</span>
+          <div v-for="item in order.orderDetails" :key="item.barcode" class="py-1">
+            <div class="flex justify-between text-sm">
+              <span>
+                {{ item.productName }} × {{ formatQuantity(item) }}
+              </span>
+              <span>{{ fmtTJS((Number(item.price) || 0) * (Number(item.orderCount) || 0)) }}</span>
+            </div>
+            <div v-if="item.productProperties" class="text-xs text-gray-500 mt-0.5">
+              {{ item.productProperties }}
+            </div>
           </div>
         </div>
 

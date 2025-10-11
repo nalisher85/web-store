@@ -1,7 +1,7 @@
 // @/stores/cartStore.ts
 import { defineStore } from 'pinia'
 import { fetchStockItemsByBarcodes, type StockItem } from '@/api/products'
-import type { ProductStockNetworkModel } from '@/types/product'
+import type { Stock } from '@/types/models'
 
 export interface CartItem {
     barcode: string
@@ -20,25 +20,21 @@ export const useCartStore = defineStore('cart', {
             if (!barcodes.length) return
 
             try {
-                const stockItems = await fetchStockItemsByBarcodes(barcodes) as ProductStockNetworkModel[]
+                const stockItems = await fetchStockItemsByBarcodes(barcodes) as Stock[]
 
                 this.stockItemsMap = Object.fromEntries(
                     stockItems.map(item => {
-
-                        const localImage = item.images?.[0]
-                        const fallbackImage = item.product?.defaultImages?.[0]
-                        const imageFile = localImage || fallbackImage || ''
-                        const imageUrl = imageFile ? `${imageFile}` : ''
-        
+                        const imageUrl = (item.images?.[0] ?? '') || ''
                         return [
                             item.barcode,
                             {
                                 barcode: item.barcode,
-                                name: item.overriddenName,
-                                price: item.webPrice ?? 0,
-                                country: item.product?.country ?? '',
+                                name: item.overriddenName || 'Товар',
+                                price: Number(item.webPrice ?? 0),
                                 imageUrl,
-                            },
+                                // страна у Stock напрямую не идёт — если храните в extraProperties, подтянем:
+                                country: (item as any)?.extraProperties?.country || undefined,
+                            } as StockItem,
                         ]
                     })
                 )

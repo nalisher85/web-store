@@ -82,8 +82,28 @@ import { useOrderStore } from '@/stores/orderStore'
 import { OrderStatus } from '@/types/order'
 import { useBackButton } from "@/composables/useBackButton"
 import { useMainButton } from "@/composables/useMainButton"
+import type { StockNS } from '@/types/models'
 
 useBackButton()
+
+function valueToText(v: StockNS.PropertyValue): string {
+  switch (v.type) {
+    case 'StringValue': return String(v.value)
+    case 'NumberValue': return String(v.value)
+    case 'IntValue': return String(v.value)
+    case 'BooleanValue': return v.value ? 'Да' : 'Нет'
+    default: return ''
+  }
+}
+
+function propsToString(props: StockNS.Property[] | undefined): string {
+  const list = props ?? []
+  if (!list.length) return ''
+  return [...list]
+    .sort((a, b) => a.propertyName.localeCompare(b.propertyName, 'ru'))
+    .map(p => `${p.propertyName}: ${valueToText(p.value as any)}`)
+    .join(', ')
+}
 
 const name = ref(''); const phone = ref(''); const address = ref('')
 const addressDescr = ref(''); const extraInfo = ref(''); const errorMessage = ref('')
@@ -117,7 +137,7 @@ const items = computed(() =>
 
     return {
       productName: name,
-      productProperties: '',
+      productProperties: propsToString(fromGoodsStock?.goodProperties),
       price,
       orderCount: ci.count,
       packedCount: 0,

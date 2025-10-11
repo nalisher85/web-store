@@ -20,19 +20,14 @@
 
         <!-- Группа кнопок: переносится на новую строку при узком экране -->
         <div class="flex gap-2 w-full sm:w-auto justify-end">
-          <button
-            @click="toggleFavorite"
-            class="px-3 py-1.5 rounded-md border text-sm bg-white hover:bg-gray-50 active:translate-y-px"
-          >
+          <button @click="toggleFavorite"
+            class="px-3 py-1.5 rounded-md border text-sm bg-white hover:bg-gray-50 active:translate-y-px">
             {{ isFavorite ? 'В избранном ❤️' : 'В избранное 🤍' }}
           </button>
 
-          <button
-            @click="shareProduct"
+          <button @click="shareProduct"
             class="px-3 py-1.5 rounded-md border text-sm bg-white hover:bg-gray-50 active:translate-y-px disabled:opacity-50"
-            :disabled="!deepLink"
-            aria-label="Поделиться товаром"
-          >
+            :disabled="!deepLink" aria-label="Поделиться товаром">
             Поделиться
           </button>
         </div>
@@ -49,17 +44,10 @@
       <h2 class="font-semibold text-lg mb-2">Модификации</h2>
 
       <div class="flex flex-wrap gap-2">
-        <button
-          v-for="(s, idx) in good!.stock"
-          :key="s.barcode || idx"
-          type="button"
-          @click="selectVariant(idx)"
-          class="rounded-full border max-w-full transition hover:bg-gray-50"
-          :class="idx === selectedIndex
+        <button v-for="(s, idx) in good!.stock" :key="s.barcode || idx" type="button" @click="selectVariant(idx)"
+          class="rounded-full border max-w-full transition hover:bg-gray-50" :class="idx === selectedIndex
             ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'bg-white text-gray-800 border-gray-200'"
-          aria-label="Выбрать модификацию"
-        >
+            : 'bg-white text-gray-800 border-gray-200'" aria-label="Выбрать модификацию">
           <!-- ЗАДАЁМ ЖЁСТКИЕ ОТСТУПЫ ВНУТРИ ЧИПСЫ -->
           <div class="flex items-center w-full gap-3 py-3 pl-6 pr-5">
             <!-- Текст варианта -->
@@ -96,19 +84,14 @@
     <div v-if="!isMainButtonActive" class="mt-6">
       <button
         class="w-full rounded-lg bg-indigo-600 text-white text-base py-3 font-semibold active:translate-y-px disabled:opacity-50"
-        :disabled="!canAddToCart"
-        @click="handleAddToCart"
-      >
+        :disabled="!canAddToCart" @click="handleAddToCart">
         {{ selectedStock ? `В корзину · ${formatPrice(selectedStock.webPrice ?? 0)}` : 'В корзину' }}
       </button>
     </div>
 
     <!-- Модалка «Поделиться» (Android / без navigator.share) -->
-    <div
-      v-if="showShareModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-      @click.self="showShareModal = false"
-    >
+    <div v-if="showShareModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @click.self="showShareModal = false">
       <div class="bg-white rounded-xl p-4 w-72 shadow-lg">
         <h3 class="font-semibold text-lg mb-3">Поделиться</h3>
         <div class="flex flex-col gap-2">
@@ -122,14 +105,19 @@
             Скопировать ссылку
           </button>
         </div>
-        <button
-          @click="showShareModal = false"
-          class="mt-4 w-full py-2 px-3 border rounded bg-gray-100 hover:bg-gray-200"
-        >
+        <button @click="showShareModal = false"
+          class="mt-4 w-full py-2 px-3 border rounded bg-gray-100 hover:bg-gray-200">
           Отмена
         </button>
       </div>
     </div>
+    <!-- mini-toast -->
+    <transition name="fade">
+      <div v-if="snackVisible"
+        class="fixed left-1/2 bottom-24 -translate-x-1/2 px-3 py-2 rounded-full bg-black/80 text-white text-sm z-50">
+        {{ snackText }}
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -191,6 +179,30 @@ function handleAddToCart() {
   const s = selectedStock.value
   if (!s?.barcode) return
   cart.addToCart(s.barcode)
+
+  // лёгкая вибрация в Telegram
+  try { WebApp.HapticFeedback?.notificationOccurred?.('success') } catch {}
+
+  // снек
+  showSnack('Добавлено в корзину')
+
+  // кратко меняем текст у MainButton (вернём через 1.2s)
+  try {
+    setText('✓ Добавлено')
+    setTimeout(() => setText('В корзину'), 1200)
+  } catch {}
+}
+
+const snackVisible = ref(false)
+const snackText = ref('')
+let snackTimer: number | undefined
+
+function showSnack(msg: string) {
+  snackText.value = msg
+  snackVisible.value = true
+  if (snackTimer) clearTimeout(snackTimer as any)
+  // @ts-ignore
+  snackTimer = setTimeout(() => { snackVisible.value = false }, 1400)
 }
 
 /* MainButton */
@@ -296,3 +308,8 @@ function variantLabel(s: Stock): string {
     .join(', ')
 }
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity .2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>
