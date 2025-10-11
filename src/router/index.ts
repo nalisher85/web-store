@@ -44,6 +44,11 @@ export const routes: Array<RouteRecordRaw> = [
     name: 'Search',
     component: () => import('@/views/SearchView.vue'),
   },
+  {
+  path: "/about",
+  name: "About",
+  component: () => import("@/views/AboutView.vue"),
+}
 ]
 
 const ua = navigator.userAgent

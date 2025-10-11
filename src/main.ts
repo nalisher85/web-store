@@ -9,6 +9,7 @@ import router from './router'
 import { primeTmaInitData } from '@/utils/tma'  
 import WebApp from "@twa-dev/sdk";
 import { initTmaUx } from "@/utils/tmaBootstrap";
+import { useConfigStore } from "@/stores/configStore";
 
 // Если хочешь — укажи ссылку на Main Mini App, чтобы из "внутренней" кнопки гарантировать фуллскрин редиректом
 const STARTAPP_LINK = "https://t.me/ali_retail_bot?startapp=1" // пример: "https://t.me/<bot_username>/<appname>?startapp=..."
@@ -80,4 +81,6 @@ async function handleDeepLinkOnce() {
 ;(async () => {
   await handleDeepLinkOnce()
   app.mount('#app')
+
+useConfigStore().refreshFromServer(true).catch(() => {});
 })()

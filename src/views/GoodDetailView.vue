@@ -186,6 +186,7 @@ const canAddToCart = computed(() => {
   const s = selectedStock.value
   return Boolean(s?.barcode) && typeof s?.webPrice === 'number'
 })
+
 function handleAddToCart() {
   const s = selectedStock.value
   if (!s?.barcode) return

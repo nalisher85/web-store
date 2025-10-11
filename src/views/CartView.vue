@@ -9,18 +9,30 @@
     </div>
 
     <div v-else>
+      <!-- Информация о доставке и минимальной сумме -->
+      <div class="mb-4 p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm space-y-1">
+        <div v-if="deliveryCharge != null">
+          Доставка:
+          <span class="font-semibold">
+            {{ deliveryCharge === 0 ? 'Бесплатно' : (deliveryCharge + ' TJS') }}
+          </span>
+        </div>
+        <div v-if="minOrderAmount != null">
+          Минимальная сумма заказа:
+          <span class="font-semibold">{{ minOrderAmount }} TJS</span>
+        </div>
+        <div v-if="minOrderAmount != null && totalPrice < minOrderAmount" class="text-red-600">
+          До минимальной суммы не хватает:
+          <span class="font-semibold">{{ (minOrderAmount - totalPrice) }} TJS</span>
+        </div>
+      </div>
       <div v-for="item in cartStore.items" :key="item.barcode" class="border-b py-4">
         <!-- Ряд 1: картинка + контент -->
         <div class="flex items-start gap-4">
           <!-- КАРТИНКА с фолбэком: stock -> good.defaultImages -> плейсхолдер -->
           <div class="h-14 w-14 flex-shrink-0 rounded overflow-hidden bg-gray-50 flex items-center justify-center">
-            <img
-              v-if="imageSrc(item.barcode)"
-              :src="imageSrc(item.barcode)!"
-              alt="Изображение"
-              class="h-full w-full object-cover"
-              @error="onImgError(item.barcode)"
-            />
+            <img v-if="imageSrc(item.barcode)" :src="imageSrc(item.barcode)!" alt="Изображение"
+              class="h-full w-full object-cover" @error="onImgError(item.barcode)" />
             <span v-else class="text-gray-400 text-[10px] leading-none text-center select-none">
               Нет фото
             </span>
@@ -42,7 +54,7 @@
             </div>
 
             <div class="text-green-600 font-bold mt-1">
-              {{ cartStore.stockItemsMap[item.barcode]?.price || 0 }} ₽
+              {{ cartStore.stockItemsMap[item.barcode]?.price || 0 }} TJS
             </div>
           </div>
         </div>
@@ -57,41 +69,68 @@
       </div>
 
       <div class="text-right mt-6 text-xl font-semibold">
-        Итого: {{ totalPrice }} ₽
+        Итого: {{ totalPrice }} TJS
       </div>
 
       <!-- Фолбэк-кнопка -->
       <div class="text-right mt-4" v-if="!isMainButtonActive">
-        <router-link to="/checkout"
+        <!-- Если нельзя оформить — рисуем disabled-кнопку без перехода -->
+        <button v-if="!canCheckout" class="px-6 py-2 rounded bg-gray-200 text-gray-400 cursor-not-allowed" disabled>
+          Оформить заказ
+        </button>
+
+        <!-- Иначе — обычная ссылка на /checkout -->
+        <router-link v-else to="/checkout"
           class="bg-white border border-violet-400 text-violet-500 px-6 py-2 rounded shadow hover:bg-violet-50 transition">
           Оформить заказ
         </router-link>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, watch, reactive } from 'vue'
+import { onMounted, onUnmounted, computed, watch, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
 import { useGoodsStore } from '@/stores/goodsStore'
 import type { StockNS } from '@/types/models'
 import { useBackButton } from '@/composables/useBackButton'
 import { useMainButton } from '@/composables/useMainButton'
+import { useConfigStore } from '@/stores/configStore'
+import WebApp from '@twa-dev/sdk'
 
 useBackButton()
+const mainButtonHandler = ref<null | (() => void)>(null)
 
 const router = useRouter()
 const cartStore = useCartStore()
 const goodsStore = useGoodsStore()
 
+const cfg = useConfigStore()
+const minOrderAmount = computed(() => cfg.minOrderAmount)   // number | null
+const deliveryCharge = computed(() => cfg.deliveryCharge)   // number | null
+
 onMounted(async () => {
   cartStore.syncStockDetails()
   if (!goodsStore.allGoods.length) {
-    try { await goodsStore.loadGoods() } catch {}
+    try { await goodsStore.loadGoods() } catch { }
   }
   initImageSources()
+  syncMainButton(!!canCheckout.value)
+})
+
+onUnmounted(() => {
+  try {
+    const MB = (window as any)?.Telegram?.WebApp?.MainButton
+    if (MB && mainButtonHandler.value) {
+      MB.offClick(mainButtonHandler.value)
+    }
+    // прячем кнопку, чтобы следующий экран показал свою
+    MB?.hide?.()
+  } catch { }
+  mainButtonHandler.value = null
 })
 
 /* ====== ЦЕНА / КНОПКА ====== */
@@ -103,13 +142,74 @@ const totalPrice = computed(() =>
 )
 
 const hasItems = computed(() => cartStore.items.length > 0)
-function goCheckout() { void router.push('/checkout') }
+const canCheckout = computed(() => {
+  const min = minOrderAmount.value
+  return hasItems.value && (min == null || totalPrice.value >= min)
+})
+
+function goCheckout() {
+  if (!canCheckout.value) {
+    // мягкая обратная связь пользователю
+    try {
+      // вибрация + popup в Telegram WebApp
+      WebApp.HapticFeedback?.notificationOccurred?.('error')
+      WebApp.showPopup?.({
+        title: 'Недостаточная сумма',
+        message: minOrderAmount.value != null
+          ? `Минимальная сумма заказа: ${minOrderAmount.value} TJS`
+          : 'Добавьте товары в корзину',
+        buttons: [{ type: 'ok' }],
+      })
+    } catch {
+      // fallback вне Telegram
+      alert(
+        minOrderAmount.value != null
+          ? `Минимальная сумма заказа: ${minOrderAmount.value} TJS`
+          : 'Добавьте товары в корзину'
+      )
+    }
+    return
+  }
+  void router.push('/checkout')
+}
 
 const { isMainButtonActive, setEnabled } = useMainButton({
   text: 'Оформить заказ',
   onClick: goCheckout,
+  enabled: false,   // ← изначально ВЫКЛ
+  show: true,       // ← показывать кнопку, но выключенной
 })
-watch(hasItems, (ok) => setEnabled(!!ok), { immediate: true })
+
+function syncMainButton(ok: boolean) {
+  try {
+    const MB = (window as any)?.Telegram?.WebApp?.MainButton
+    if (!MB) return
+
+    // 1) всегда снимаем наш прошлый обработчик, если был
+    if (mainButtonHandler.value) {
+      MB.offClick(mainButtonHandler.value)
+      mainButtonHandler.value = null
+    }
+
+    if (!ok) {
+      // 2) когда нельзя оформлять — просто прячем кнопку
+      MB.hide()
+      return
+    }
+
+    // 3) когда можно — показываем и вешаем только наш обработчик
+    MB.setParams({ text: 'Оформить заказ', is_active: true, is_visible: true })
+    const handler = () => {
+      if (!canCheckout.value) return // страховка
+      void router.push('/checkout')
+    }
+    mainButtonHandler.value = handler
+    MB.onClick(handler)
+    MB.show()
+  } catch { }
+}
+
+watch(canCheckout, (ok) => setEnabled(!!ok), { immediate: true })
 
 /* ====== ВАРИАНТ → СВОЙСТВА ====== */
 function valueToText(v: StockNS.PropertyValue): string {
