@@ -66,7 +66,9 @@
     <!-- Описание -->
     <section v-if="good?.good.description" class="mt-4">
       <h3 class="font-semibold text-lg mb-1">Описание</h3>
-      <p class="text-gray-700">{{ good!.good.description }}</p>
+      <p class="text-gray-700 whitespace-pre-line break-words">
+        {{ good!.good.description }}
+      </p>
     </section>
 
     <!-- Характеристики выбранной модификации -->
@@ -133,6 +135,7 @@ import type { Stock, StockNS } from '@/types/models'
 import { useBackButton } from '@/composables/useBackButton'
 import { useMainButton } from '@/composables/useMainButton'
 import WebApp from '@twa-dev/sdk'
+import { BOT_USERNAME } from '@/config'
 
 useBackButton()
 
@@ -211,8 +214,7 @@ watch(canAddToCart, (ok) => setEnabled(!!ok), { immediate: true })
 watch(selectedStock, (s) => setText(s?.webPrice != null ? `В корзину · ${formatPrice(s.webPrice)}` : 'В корзину'), { immediate: true })
 
 /* Deep-link + Share */
-const BOT_USERNAME = 'ali_retail_bot'
-const deepLink = computed(() => good.value?.good.id ? `https://t.me/${BOT_USERNAME}?startapp=good_${good.value.good.id}` : '')
+const deepLink = computed(() => good.value?.good.id ? `https://t.me/${BOT_USERNAME}?start=good_${good.value.good.id}` : '')
 const shareHint = ref('')
 const showShareModal = ref(false)
 
@@ -286,10 +288,20 @@ onMounted(async () => {
 
 /* Утилиты */
 function formatPrice(n: number) {
+    const isInt = Number.isInteger(n)
   try {
-    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'TJS', maximumFractionDigits: 0 }).format(n)
-  } catch { return `${n} TJS` }
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'TJS',
+      minimumFractionDigits: isInt ? 0 : 0,
+      maximumFractionDigits: isInt ? 0 : 2,
+    }).format(n)
+  } catch {
+    // fallback
+    return isInt ? `${n} TJS` : `${n.toFixed(2)} TJS`
+  }
 }
+
 function valueToText(v: StockNS.PropertyValue): string {
   switch (v.type) {
     case 'StringValue': return String(v.value)

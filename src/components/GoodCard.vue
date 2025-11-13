@@ -93,15 +93,20 @@ const minPrice = computed<number | null>(() => {
 const variantsLabel = computed(() => `${g.value.stock?.length ?? 0} вар.`)
 const showVariants = computed(() => (g.value.stock?.length ?? 0) > 1)
 
-function formatPrice(value: number) {
+/* Утилиты */
+function formatPrice(n: number) {
+    const isInt = Number.isInteger(n)
   try {
+
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'TJS',
-      maximumFractionDigits: 0,
-    }).format(value)
+      minimumFractionDigits: isInt ? 0 : 0,
+      maximumFractionDigits: isInt ? 0 : 2,
+    }).format(n)
   } catch {
-    return String(Math.round(value))
+    // fallback
+    return isInt ? `${n} TJS` : `${n.toFixed(2)} TJS`
   }
 }
 </script>

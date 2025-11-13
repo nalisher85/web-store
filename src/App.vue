@@ -15,8 +15,8 @@
         <!-- ЦЕНТР (кликабельно): переход на главную -->
         <RouterLink to="/" class="flex items-center justify-center gap-2 no-underline text-inherit"
           style="pointer-events:auto">
-          <span class="text-2xl leading-none">💊</span>
-          <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">Аптека</h1>
+          <!-- <span class="text-2xl leading-none">💊</span> -->
+          <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">Одежда</h1>
         </RouterLink>
 
         <!-- Правый резерв под нативную кнопку -->
