@@ -66,10 +66,22 @@
     <!-- Описание -->
     <section v-if="good?.good.description" class="mt-4">
       <h3 class="font-semibold text-lg mb-1">Описание</h3>
-      <p class="text-gray-700 whitespace-pre-line break-words">
-        {{ good!.good.description }}
+      <p class="text-gray-700 break-words">
+        <template v-for="(part, idx) in descriptionParts" :key="idx">
+          <span v-if="part.type === 'text'">
+            {{ part.content }}
+          </span>
+
+          <a v-else-if="part.type === 'link'" :href="part.content" class="text-indigo-600 underline break-all"
+            target="_blank" rel="noopener noreferrer">
+            {{ part.content }}
+          </a>
+
+          <br v-else />
+        </template>
       </p>
     </section>
+
 
     <!-- Характеристики выбранной модификации -->
     <section v-if="selectedProps.length" class="mt-4">
@@ -184,7 +196,7 @@ function handleAddToCart() {
   cart.addToCart(s.barcode)
 
   // лёгкая вибрация в Telegram
-  try { WebApp.HapticFeedback?.notificationOccurred?.('success') } catch {}
+  try { WebApp.HapticFeedback?.notificationOccurred?.('success') } catch { }
 
   // снек
   showSnack('Добавлено в корзину')
@@ -193,7 +205,7 @@ function handleAddToCart() {
   try {
     setText('✓ Добавлено')
     setTimeout(() => setText('В корзину'), 1200)
-  } catch {}
+  } catch { }
 }
 
 const snackVisible = ref(false)
@@ -280,6 +292,60 @@ async function shareProduct() {
   showShareModal.value = true
 }
 
+type DescriptionPart = {
+  type: 'text' | 'link' | 'br'
+  content?: string
+}
+
+const descriptionParts = computed<DescriptionPart[]>(() => {
+  const desc = good.value?.good.description || ''
+  if (!desc) return []
+
+  const lines = desc.split(/\r?\n/)
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const result: DescriptionPart[] = []
+
+  lines.forEach((line, lineIdx) => {
+    let lastIndex = 0
+
+    // ищем ссылки в строке
+    line.replace(urlRegex, (match, _p1, offset) => {
+      // текст до ссылки
+      if (offset > lastIndex) {
+        result.push({
+          type: 'text',
+          content: line.slice(lastIndex, offset),
+        })
+      }
+
+      // сама ссылка
+      result.push({
+        type: 'link',
+        content: match,
+      })
+
+      lastIndex = offset + match.length
+      return match
+    })
+
+    // хвост строки после последней ссылки
+    if (lastIndex < line.length) {
+      result.push({
+        type: 'text',
+        content: line.slice(lastIndex),
+      })
+    }
+
+    // перевод строки (кроме последней строки)
+    if (lineIdx < lines.length - 1) {
+      result.push({ type: 'br' })
+    }
+  })
+
+  return result
+})
+
+
 /* Данные */
 onMounted(async () => {
   const id = Number(route.params.id)
@@ -288,7 +354,7 @@ onMounted(async () => {
 
 /* Утилиты */
 function formatPrice(n: number) {
-    const isInt = Number.isInteger(n)
+  const isInt = Number.isInteger(n)
   try {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -322,6 +388,13 @@ function variantLabel(s: Stock): string {
 </script>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity .2s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity .2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
