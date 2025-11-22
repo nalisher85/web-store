@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-white flex flex-col">
     <!-- Header -->
-    <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b px-3 sm:px-4 pt-2" :style="{
+    <header v-if="showHeader" class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b px-3 sm:px-4 pt-2" :style="{
       paddingTop: 'calc(var(--tma-safe-area-top, env(safe-area-inset-top)) + 6px)'
     }">
       <!-- Ряд 1: центрируем заголовок между нативными кнопками (Close / ... ) -->
@@ -52,7 +52,11 @@
 
 <script setup lang="ts">
 import CartBadge from '@/components/CartBadge.vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
+import { computed } from 'vue'
+
+const route = useRoute()
+const showHeader = computed(() => !route.meta.hideHeader)
 
 // На всякий случай — если открыто в браузере
 if ((window as any)?.Telegram?.WebApp?.ready) {

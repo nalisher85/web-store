@@ -13,7 +13,9 @@ export const routes: Array<RouteRecordRaw> = [
     name: 'GoodDetail',
     component: () => import('@/views/GoodDetailView.vue'),
     props: true,
+    meta: { hideHeader: true },
   },
+
   {
     path: '/orders',
     name: 'Orders',
@@ -45,10 +47,10 @@ export const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/SearchView.vue'),
   },
   {
-  path: "/about",
-  name: "About",
-  component: () => import("@/views/AboutView.vue"),
-}
+    path: "/about",
+    name: "About",
+    component: () => import("@/views/AboutView.vue"),
+  }
 ]
 
 const ua = navigator.userAgent
