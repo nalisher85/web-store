@@ -4,12 +4,20 @@
 
     <div v-else>
       <!-- Обманка поля поиска (кликабельная зона) -->
-      <button v-if="!isMainButtonActive" type="button"
+      <button
+        v-if="!isMainButtonActive"
+        type="button"
         class="mb-3 w-full rounded-2xl border px-4 py-2.5 bg-white hover:bg-gray-50 active:translate-y-px transition flex items-center gap-2 text-left"
-        @click="openSearch" aria-label="Открыть поиск">
+        @click="openSearch"
+        aria-label="Открыть поиск"
+      >
         <svg class="h-5 w-5 opacity-60" viewBox="0 0 24 24" fill="none">
-          <path d="M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm9 17-5-5" stroke="currentColor" stroke-width="1.5"
-            stroke-linecap="round" />
+          <path
+            d="M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm9 17-5-5"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
         </svg>
         <span class="text-gray-500 select-none">Поиск товаров…</span>
       </button>
@@ -18,28 +26,35 @@
       <nav class="mb-3 text-sm text-gray-600">
         <div class="flex flex-wrap items-center gap-1">
           <!-- Стрелка назад к родительской категории -->
-          <button v-if="canGoBackCategory" type="button"
+          <button
+            v-if="canGoBackCategory"
+            type="button"
             class="mr-1 flex items-center justify-center w-7 h-7 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 active:translate-y-px"
-            @click="goBackCategory" aria-label="Назад к предыдущей категории">
+            @click="goBackCategory"
+            aria-label="Назад к предыдущей категории"
+          >
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                stroke-linejoin="round" />
+              <path
+                d="M15 6L9 12L15 18"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
 
           <template v-for="(crumb, i) in selected.iterateUp()" :key="crumb.id">
             <button
               class="appearance-none bg-transparent p-0 underline underline-offset-2 text-gray-600 hover:text-gray-800"
-              @click="selectCategory(crumb)">
+              @click="selectCategory(crumb)"
+            >
               {{ crumb.name }}
             </button>
-            <span v-if="i < selected.iterateUp().length - 1" class="mx-1 text-gray-400">
-              /
-            </span>
+            <span v-if="i < selected.iterateUp().length - 1" class="mx-1 text-gray-400">/</span>
           </template>
         </div>
       </nav>
-
 
       <!-- Подкатегории -->
       <section class="mb-4">
@@ -49,7 +64,8 @@
               <li v-for="cat in selected.children" :key="cat.id">
                 <button
                   class="appearance-none px-3 py-1 rounded-full border border-gray-200 text-sm text-gray-800 whitespace-nowrap hover:bg-gray-50"
-                  @click="selectCategory(cat)">
+                  @click="selectCategory(cat)"
+                >
                   {{ cat.name }}
                 </button>
               </li>
@@ -83,8 +99,8 @@ import { useRouter } from 'vue-router'
 import { useCategoryStore } from '@/stores/categoryStore'
 import { useGoodsStore } from '@/stores/goodsStore'
 import GoodCard from '@/components/GoodCard.vue'
-import { useMainButton } from "@/composables/useMainButton";
-
+import { useMainButton } from '@/composables/useMainButton'
+import { getTmaInitData } from '@/utils/tma'
 
 const categoryStore = useCategoryStore()
 const { selected, loading } = storeToRefs(categoryStore)
@@ -118,13 +134,18 @@ const goBackCategory = () => {
   }
 }
 
-
 const router = useRouter()
 
+// Если initData отсутствует — это обычный браузер, MainButton не используем
+const hasTma = computed(() => !!getTmaInitData())
+
 const { isMainButtonActive } = useMainButton({
-  text: "Поиск",
-  onClick: () => void router.push({ name: "Search", query: { sid: String(Date.now()) } }),
-});
+  text: 'Поиск',
+  onClick: () => void router.push({ name: 'Search', query: { sid: String(Date.now()) } }),
+  // ключевая правка: в браузере MainButton скрываем
+  show: hasTma.value,
+  enabled: hasTma.value,
+})
 
 const openSearch = () => {
   // Новый «сеанс» поиска: уникальный sid

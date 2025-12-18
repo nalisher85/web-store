@@ -3,6 +3,7 @@
 export interface OrderDetail {
   id?: number                
   orderId?: number 
+  goodId?: number | null
   productName: string
   productProperties: string | null
   price: number

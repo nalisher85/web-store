@@ -32,13 +32,18 @@
         </div>
 
         <div class="divide-y">
-          <div v-for="item in order.orderDetails" :key="item.barcode" class="py-1">
-            <div class="flex justify-between text-sm">
-              <span>
-                {{ item.productName }} × {{ formatQuantity(item) }}
-              </span>
-              <span>{{ fmtTJS((Number(item.price) || 0) * (Number(item.orderCount) || 0)) }}</span>
-            </div>
+          <div
+  v-for="item in order.orderDetails"
+  :key="item.barcode"
+  class="py-1 cursor-pointer hover:bg-gray-50 rounded px-1"
+  @click="goToGood(item)"
+>
+  <div class="flex justify-between text-sm">
+    <span class="underline underline-offset-2">
+      {{ item.productName }} × {{ formatQuantity(item) }}
+    </span>
+    <span>{{ fmtTJS((Number(item.price) || 0) * (Number(item.orderCount) || 0)) }}</span>
+  </div>
             <div v-if="item.productProperties" class="text-xs text-gray-500 mt-0.5">
               {{ item.productProperties }}
             </div>
@@ -81,8 +86,15 @@ import { ref, onMounted, computed } from 'vue'
 import { useOrderStore } from '@/stores/orderStore'
 import type { Order, OrderStatus, OrderDetail } from '@/types/order'
 import { useBackButton } from "@/composables/useBackButton"
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 useBackButton()
+
+const goToGood = (item: OrderDetail) => {
+  if (!item.goodId) return
+  router.push({ name: 'GoodDetail', params: { id: item.goodId } })
+}
 
 // формат суммы в TJS
 const fmtTJS = (n: number) =>
@@ -165,9 +177,30 @@ const statusClass = (status: string) => {
   }[status] || 'bg-gray-100 text-gray-700'
 }
 
+const statusPriority: Record<OrderStatus, number> = {
+  NEW: 1,
+  IN_PROGRESS: 2,
+  DONE: 3,
+  CANCELED: 4,
+}
+
 const filteredOrders = computed(() => {
-  if (selectedFilter.value === 'ALL') return orders.value
-  return orders.value.filter(o => o.orderStatus === selectedFilter.value)
+  const base =
+    selectedFilter.value === 'ALL'
+      ? orders.value
+      : orders.value.filter(o => o.orderStatus === selectedFilter.value)
+
+  return [...base].sort((a, b) => {
+    // 1️⃣ сортировка по статусу
+    const sp =
+      statusPriority[a.orderStatus as OrderStatus] -
+      statusPriority[b.orderStatus as OrderStatus]
+
+    if (sp !== 0) return sp
+
+    // 2️⃣ сортировка по дате (новые сверху)
+    return b.createdAt - a.createdAt
+  })
 })
 
 const formatQuantity = (item: OrderDetail): string => {

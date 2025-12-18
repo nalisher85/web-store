@@ -3,31 +3,14 @@
     <div class="mx-auto max-w-xl">
       <!-- HERO: Картинка ~80% высоты экрана -->
       <section class="relative w-full h-[80vh] overflow-hidden bg-white">
-        <ImageGallery
-          :key="galleryKey"
-          :images="galleryImages"
-          class="h-full"
-        />
+        <ImageGallery :key="galleryKey" :images="galleryImages" class="h-full" />
 
         <!-- Кнопка Поделиться (иконка) -->
-        <button
-          type="button"
-          @click="shareProduct"
-          :disabled="!deepLink"
+        <button type="button" @click="shareProduct" :disabled="!deepLink"
           class="absolute left-3 p-2 rounded-full bg-white/80 backdrop-blur shadow border active:translate-y-px disabled:opacity-40 z-20"
-          :style="{ bottom: '24px' }"
-          aria-label="Поделиться товаром"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
+          :style="{ bottom: '24px' }" aria-label="Поделиться товаром">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
             <path d="M12 16V4" />
             <path d="m8 8 4-4 4 4" />
@@ -35,47 +18,47 @@
         </button>
 
         <!-- Кнопка Избранное (иконка) -->
-        <button
-          type="button"
-          @click="toggleFavorite"
+        <button type="button" @click="toggleFavorite"
           class="absolute right-3 p-2 rounded-full bg-white/80 backdrop-blur shadow border active:translate-y-px z-20"
-          :style="{ bottom: '24px' }"
-          :aria-label="isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'"
-        >
+          :style="{ bottom: '24px' }" :aria-label="isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'">
           <!-- НЕактивное состояние: серый контур -->
-          <svg
-            v-if="!isFavorite"
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 text-gray-400"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
+          <svg v-if="!isFavorite" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path
-              d="M12.1 20.3C7.1 15.9 4 13.1 4 9.5 4 7 6 5 8.5 5c1.7 0 3.4 1 4.1 2.6C13.1 6 14.8 5 16.5 5 19 5 21 7 21 9.5c0 3.6-3.1 6.4-8.1 10.8l-.9.8-.9-.8z"
-            />
+              d="M12.1 20.3C7.1 15.9 4 13.1 4 9.5 4 7 6 5 8.5 5c1.7 0 3.4 1 4.1 2.6C13.1 6 14.8 5 16.5 5 19 5 21 7 21 9.5c0 3.6-3.1 6.4-8.1 10.8l-.9.8-.9-.8z" />
           </svg>
 
           <!-- Активное состояние: красное залитое -->
-          <svg
-            v-else
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 text-red-500"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 24 24"
+            fill="currentColor">
             <path
-              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.24 4 9.91 4.81 11 6.08 12.09 4.81 13.76 4 15.5 4 18 4 20 6 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-            />
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4 8.24 4 9.91 4.81 11 6.08 12.09 4.81 13.76 4 15.5 4 18 4 20 6 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
           </svg>
         </button>
+
+        <!-- Кнопка Корзина (иконка, только TMA) -->
+        <button v-if="hasTma" type="button" @click="router.push('/cart')"
+          class="absolute p-2 rounded-full bg-white/80 backdrop-blur shadow border active:translate-y-px z-20"
+:style="{ bottom: '24px', right: '70px' }" aria-label="Перейти в корзину">
+          <!-- иконка корзины -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.6 13.6a2 2 0 0 0 2 1.4h9.7a2 2 0 0 0 2-1.6L23 6H6" />
+          </svg>
+
+          <!-- badge -->
+          <span v-if="cartCount > 0"
+            class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[11px] leading-[18px] text-center">
+            {{ cartCount }}
+          </span>
+        </button>
+
       </section>
 
       <!-- Основной контент -->
-      <div class="px-4 pb-6">
+      <div class="px-4 pb-32">
         <!-- Цена -->
         <div class="my-4">
           <div class="flex flex-wrap items-center gap-2">
@@ -102,17 +85,11 @@
           <h2 class="font-semibold text-lg mb-2">Модификации</h2>
 
           <div class="flex flex-wrap gap-2">
-            <button
-              v-for="(s, idx) in good!.stock"
-              :key="s.barcode || idx"
-              type="button"
-              @click="selectVariant(idx)"
-              class="rounded-full border max-w-full transition hover:bg-gray-50"
-              :class="idx === selectedIndex
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-gray-800 border-gray-200'"
-              aria-label="Выбрать модификацию"
-            >
+            <button v-for="(s, idx) in good!.stock" :key="s.barcode || idx" type="button" @click="selectVariant(idx)"
+              class="rounded-full border max-w-full transition" :class="idx === selectedIndex
+                ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-600'
+                : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'" aria-label="Выбрать модификацию">
+
               <div class="flex items-center w-full gap-3 py-3 pl-6 pr-5">
                 <span class="flex-1 min-w-0 break-words leading-normal text-left">
                   {{ variantLabel(s) }}
@@ -134,13 +111,8 @@
                 {{ part.content }}
               </span>
 
-              <a
-                v-else-if="part.type === 'link'"
-                :href="part.content"
-                class="text-indigo-600 underline break-all"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a v-else-if="part.type === 'link'" :href="part.content" class="text-indigo-600 underline break-all"
+                target="_blank" rel="noopener noreferrer">
                 {{ part.content }}
               </a>
 
@@ -153,36 +125,38 @@
         <section v-if="selectedProps.length" class="mt-4">
           <h3 class="font-semibold text-lg mb-1">Характеристики</h3>
           <dl class="grid grid-cols-1 gap-y-1 text-gray-700">
-            <div
-              v-for="p in selectedProps"
-              :key="p.propertyName"
-              class="flex gap-2"
-            >
+            <div v-for="p in selectedProps" :key="p.propertyName" class="flex gap-2">
               <dt class="w-48 text-gray-500">{{ p.propertyName }}:</dt>
               <dd class="flex-1">{{ valueToText(p.value) }}</dd>
             </div>
           </dl>
         </section>
 
-        <!-- Резервная кнопка -->
-        <div v-if="!isMainButtonActive" class="mt-6">
-          <button
-            class="w-full rounded-lg bg-indigo-600 text-white text-base py-3 font-semibold active:translate-y-px disabled:opacity-50"
-            :disabled="!canAddToCart"
-            @click="handleAddToCart"
-          >
-            {{ selectedStock ? `В корзину · ${formatPrice(selectedStock.webPrice ?? 0)}` : 'В корзину' }}
-          </button>
+        <!-- Fixed bottom action -->
+        <div class="sticky bottom-0 z-40 bg-white border-t" :style="{
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+        }">
+          <div class="mx-auto max-w-xl px-4 pt-3">
+            <button
+              class="w-full rounded-lg bg-indigo-600 text-white text-base py-3 font-semibold active:translate-y-px disabled:opacity-50"
+              :disabled="hasTma && !canAddToCart" @click="hasTma ? handleAddToCart() : openTelegram()">
+              <template v-if="hasTma">
+                {{ selectedStock ? `В корзину · ${formatPrice(selectedStock.webPrice ?? 0)}` : 'В корзину' }}
+              </template>
+              <template v-else>
+                Открыть в телеграм
+              </template>
+            </button>
+          </div>
         </div>
+
+
       </div>
     </div>
 
     <!-- Модалка «Поделиться» -->
-    <div
-      v-if="showShareModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-      @click.self="showShareModal = false"
-    >
+    <div v-if="showShareModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @click.self="showShareModal = false">
       <div class="bg-white rounded-xl p-4 w-72 shadow-lg">
         <h3 class="font-semibold text-lg mb-3">Поделиться</h3>
         <div class="flex flex-col gap-2">
@@ -196,10 +170,8 @@
             Скопировать ссылку
           </button>
         </div>
-        <button
-          @click="showShareModal = false"
-          class="mt-4 w-full py-2 px-3 border rounded bg-gray-100 hover:bg-gray-200"
-        >
+        <button @click="showShareModal = false"
+          class="mt-4 w-full py-2 px-3 border rounded bg-gray-100 hover:bg-gray-200">
           Отмена
         </button>
       </div>
@@ -207,10 +179,8 @@
 
     <!-- mini-toast -->
     <transition name="fade">
-      <div
-        v-if="snackVisible"
-        class="fixed left-1/2 bottom-24 -translate-x-1/2 px-3 py-2 rounded-full bg-black/80 text-white text-sm z-50"
-      >
+      <div v-if="snackVisible"
+        class="fixed left-1/2 bottom-24 -translate-x-1/2 px-3 py-2 rounded-full bg-black/80 text-white text-sm z-50">
         {{ snackText }}
       </div>
     </transition>
@@ -227,9 +197,14 @@ import { useCartStore } from '@/stores/cartStore'
 import { useFavoritesStore } from '@/stores/favoritesStore'
 import type { Stock, StockNS } from '@/types/models'
 import { useBackButton } from '@/composables/useBackButton'
-import { useMainButton } from '@/composables/useMainButton'
 import WebApp from '@twa-dev/sdk'
 import { BOT_USERNAME } from '@/config'
+import { getTmaInitData } from '@/utils/tma'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const hasTma = computed(() => !!getTmaInitData())
 
 useBackButton()
 
@@ -238,6 +213,8 @@ const store = useGoodsStore()
 const { good } = storeToRefs(store)
 const cart = useCartStore()
 const favorites = useFavoritesStore()
+
+const cartCount = computed(() => cart.items.length)
 
 /* Галерея */
 const selectedIndex = ref<number>(0)
@@ -283,6 +260,12 @@ function selectVariant(idx: number) {
   selectedIndex.value = idx
 }
 
+function openTelegram() {
+  if (!good.value?.good.id) return
+  const url = `https://telegram.me/${BOT_USERNAME}?start=good_${good.value.good.id}-browserMode`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
 /* Избранное */
 const isFavorite = computed(() =>
   good.value?.good.id ? favorites.isFavorite(good.value.good.id) : false,
@@ -305,14 +288,9 @@ function handleAddToCart() {
 
   try {
     WebApp.HapticFeedback?.notificationOccurred?.('success')
-  } catch {}
+  } catch { }
 
   showSnack('Добавлено в корзину')
-
-  try {
-    setText('✓ Добавлено')
-    setTimeout(() => setText('В корзину'), 1200)
-  } catch {}
 }
 
 const snackVisible = ref(false)
@@ -329,31 +307,10 @@ function showSnack(msg: string) {
   }, 1400)
 }
 
-/* MainButton */
-const { isMainButtonActive, setEnabled, setText } = useMainButton({
-  text: 'В корзину',
-  onClick: handleAddToCart,
-})
-watch(
-  canAddToCart,
-  (ok) => setEnabled(!!ok),
-  { immediate: true },
-)
-watch(
-  selectedStock,
-  (s) =>
-    setText(
-      s?.webPrice != null
-        ? `В корзину · ${formatPrice(s.webPrice)}`
-        : 'В корзину',
-    ),
-  { immediate: true },
-)
-
 /* Deep-link + Share */
 const deepLink = computed(() =>
   good.value?.good.id
-    ? `https://t.me/${BOT_USERNAME}?start=good_${good.value.good.id}`
+    ? `https://telegram.me/${BOT_USERNAME}?start=good_${good.value.good.id}-share`
     : '',
 )
 const shareHint = ref('')
@@ -377,13 +334,13 @@ async function copyLink() {
 
 async function openTelegramShare() {
   if (!deepLink.value) return
-  const url = `https://t.me/share/url?url=${encodeURIComponent(
+  const url = `https://telegram.me/share/url?url=${encodeURIComponent(
     deepLink.value,
   )}&text=${encodeURIComponent(good.value?.good.name || 'Товар')}`
 
   try {
     if ((WebApp as any)?.openTelegramLink) {
-      ;(WebApp as any).openTelegramLink(url)
+      ; (WebApp as any).openTelegramLink(url)
     } else {
       window.open(url, '_blank')
     }

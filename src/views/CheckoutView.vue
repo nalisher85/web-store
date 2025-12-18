@@ -126,9 +126,10 @@ const items = computed(() =>
     const fromCart = cartStore.stockItemsMap[ci.barcode]
     const fromGoods = goodsStore.allGoods.find(g => g.stock.some(s => s.barcode === ci.barcode))
     const fromGoodsStock = fromGoods?.stock.find(s => s.barcode === ci.barcode)
+    const goodId = fromGoods?.good.id ?? null
 
     console.log('myLog computed')
-      console.log('[cart] items:', cartStore.items)
+    console.log('[cart] items:', cartStore.items)
     console.log('[cart] map:', toRaw(cartStore.stockItemsMap))           // снять Proxy
     console.table(Object.values(toRaw(cartStore.stockItemsMap) ?? {}))   // табличкой
 
@@ -143,6 +144,7 @@ const items = computed(() =>
       packedCount: 0,
       purchasedCount: 0,
       barcode: ci.barcode,
+      goodId: goodId,
     }
   })
 )
