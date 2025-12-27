@@ -26,7 +26,7 @@
           style="pointer-events: auto"
         >
           <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">
-            Одежда
+            СтройДом
           </h1>
         </RouterLink>
 
