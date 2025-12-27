@@ -8,13 +8,47 @@ export const useGoodsStore = defineStore('goods', () => {
   const good = ref<GoodWithStock | null>(null)
   const loading = ref(false)
 
+  const limit = 20
+  const offset = ref(0)
+  const hasMore = ref(true)
+  const loadingMore = ref(false)
+  let lastCategoryId: number | undefined
+
   const loadGoods = async (categoryId?: number) => {
-    loading.value = true
-    goods.value = await fetchGoods(categoryId)
-    loading.value = false
+    // смена категории → полный сброс
+    if (lastCategoryId !== categoryId) {
+      goods.value = []
+      offset.value = 0
+      hasMore.value = true
+      lastCategoryId = categoryId
+    }
+
+    if (!hasMore.value || loadingMore.value) return
+
+    loadingMore.value = true
+    loading.value = offset.value === 0
+
+    try {
+      const data = await fetchGoods({
+        categoryId,
+        offset: offset.value,
+        limit
+      })
+
+      if (data.length < limit) {
+        hasMore.value = false
+      }
+
+      goods.value.push(...data)
+      offset.value += data.length
+    } finally {
+      loading.value = false
+      loadingMore.value = false
+    }
   }
 
-    const loadGood = async (id: number) => {
+
+  const loadGood = async (id: number) => {
     loading.value = true
     good.value = await fetchGoodById(id)
     loading.value = false
@@ -27,5 +61,7 @@ export const useGoodsStore = defineStore('goods', () => {
     loadGoods,
     loadGood,
     allGoods: goods,
+    hasMore,
+    loadingMore
   }
 })

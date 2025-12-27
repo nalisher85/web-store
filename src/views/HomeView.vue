@@ -88,12 +88,20 @@
           <GoodCard v-for="item in goods" :key="item.good.id" :good="item" />
         </div>
       </section>
+
+      <!-- Кнопка загрузки ещё -->
+      <div v-if="hasMore" ref="loadMoreRef" class="h-10"></div>
+
+      <div v-if="loadingMore" class="text-center text-gray-400 py-4">
+        Загрузка ещё…
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch, computed } from 'vue'
+import { onMounted, watch, computed, onBeforeUnmount, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useCategoryStore } from '@/stores/categoryStore'
@@ -106,10 +114,39 @@ const categoryStore = useCategoryStore()
 const { selected, loading } = storeToRefs(categoryStore)
 
 const goodsStore = useGoodsStore()
-const { goods, loading: goodsLoading } = storeToRefs(goodsStore)
+const { goods, loading: goodsLoading, hasMore, loadingMore } = storeToRefs(goodsStore)
+
+const loadMoreRef = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
 onMounted(() => {
   if (!categoryStore.flatList.length) categoryStore.loadCategories()
+
+  observer = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry.isIntersecting) return
+
+      const catId =
+        selected.value?.id && selected.value.id !== 0
+          ? Number(selected.value.id)
+          : undefined
+
+      goodsStore.loadGoods(catId)
+    },
+    { rootMargin: '200px' } // чтобы догружало чуть заранее
+  )
+
+  if (loadMoreRef.value) observer.observe(loadMoreRef.value)
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+})
+
+watch(loadMoreRef, (el) => {
+  if (el && observer) {
+    observer.observe(el)
+  }
 })
 
 watch(
