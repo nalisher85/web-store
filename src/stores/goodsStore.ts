@@ -13,6 +13,7 @@ export const useGoodsStore = defineStore('goods', () => {
   const hasMore = ref(true)
   const loadingMore = ref(false)
   let lastCategoryId: number | undefined
+  const isInitialLoaded = ref(false)
 
   const loadGoods = async (categoryId?: number) => {
     // смена категории → полный сброс
@@ -28,12 +29,14 @@ export const useGoodsStore = defineStore('goods', () => {
     loadingMore.value = true
     loading.value = offset.value === 0
 
+    let ok = false
     try {
       const data = await fetchGoods({
         categoryId,
         offset: offset.value,
         limit
       })
+      ok = true
 
       if (data.length < limit) {
         hasMore.value = false
@@ -45,6 +48,9 @@ export const useGoodsStore = defineStore('goods', () => {
       loading.value = false
       loadingMore.value = false
     }
+
+    if (ok && !isInitialLoaded.value) isInitialLoaded.value = true
+
   }
 
 
@@ -62,6 +68,7 @@ export const useGoodsStore = defineStore('goods', () => {
     loadGood,
     allGoods: goods,
     hasMore,
-    loadingMore
+    loadingMore,
+    isInitialLoaded,
   }
 })

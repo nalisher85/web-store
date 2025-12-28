@@ -68,8 +68,13 @@
 
     <!-- Content -->
     <main class="flex-1">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <keep-alive include="Home">
+          <component :is="Component" />
+        </keep-alive>
+      </RouterView>
     </main>
+
   </div>
 </template>
 

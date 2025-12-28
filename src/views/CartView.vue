@@ -72,19 +72,15 @@
         Итого: {{ totalPrice }} TJS
       </div>
 
-      <!-- Фолбэк-кнопка -->
-      <div class="text-right mt-4" v-if="!isMainButtonActive">
-        <!-- Если нельзя оформить — рисуем disabled-кнопку без перехода -->
-        <button v-if="!canCheckout" class="px-6 py-2 rounded bg-gray-200 text-gray-400 cursor-not-allowed" disabled>
+      <!-- Bottom action -->
+      <div class="sticky bottom-0 bg-white border-t p-4">
+        <button class="w-full h-12 rounded-lg font-semibold transition
+           disabled:opacity-60 disabled:cursor-not-allowed
+           bg-violet-600 text-white hover:bg-violet-700" :disabled="!canCheckout" @click="goCheckout">
           Оформить заказ
         </button>
-
-        <!-- Иначе — обычная ссылка на /checkout -->
-        <router-link v-else to="/checkout"
-          class="bg-white border border-violet-400 text-violet-500 px-6 py-2 rounded shadow hover:bg-violet-50 transition">
-          Оформить заказ
-        </router-link>
       </div>
+
 
     </div>
   </div>
@@ -97,7 +93,6 @@ import { useCartStore } from '@/stores/cartStore'
 import { useGoodsStore } from '@/stores/goodsStore'
 import type { StockNS } from '@/types/models'
 import { useBackButton } from '@/composables/useBackButton'
-import { useMainButton } from '@/composables/useMainButton'
 import { useConfigStore } from '@/stores/configStore'
 import WebApp from '@twa-dev/sdk'
 
@@ -118,7 +113,6 @@ onMounted(async () => {
     try { await goodsStore.loadGoods() } catch { }
   }
   initImageSources()
-  syncMainButton(!!canCheckout.value)
 })
 
 onUnmounted(() => {
@@ -173,43 +167,6 @@ function goCheckout() {
   void router.push('/checkout')
 }
 
-const { isMainButtonActive, setEnabled } = useMainButton({
-  text: 'Оформить заказ',
-  onClick: goCheckout,
-  enabled: false,   // ← изначально ВЫКЛ
-  show: true,       // ← показывать кнопку, но выключенной
-})
-
-function syncMainButton(ok: boolean) {
-  try {
-    const MB = (window as any)?.Telegram?.WebApp?.MainButton
-    if (!MB) return
-
-    // 1) всегда снимаем наш прошлый обработчик, если был
-    if (mainButtonHandler.value) {
-      MB.offClick(mainButtonHandler.value)
-      mainButtonHandler.value = null
-    }
-
-    if (!ok) {
-      // 2) когда нельзя оформлять — просто прячем кнопку
-      MB.hide()
-      return
-    }
-
-    // 3) когда можно — показываем и вешаем только наш обработчик
-    MB.setParams({ text: 'Оформить заказ', is_active: true, is_visible: true })
-    const handler = () => {
-      if (!canCheckout.value) return // страховка
-      void router.push('/checkout')
-    }
-    mainButtonHandler.value = handler
-    MB.onClick(handler)
-    MB.show()
-  } catch { }
-}
-
-watch(canCheckout, (ok) => setEnabled(!!ok), { immediate: true })
 
 /* ====== ВАРИАНТ → СВОЙСТВА ====== */
 function valueToText(v: StockNS.PropertyValue): string {

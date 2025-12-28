@@ -17,7 +17,7 @@
 
         <!-- Текстовая часть -->
         <div class="p-3">
-          <div class="text-sm font-medium line-clamp-2 min-h-[2.5rem]">
+          <div class="text-sm font-medium line-clamp-4 min-h-[5rem]" :title="g.good.name">
             {{ g.good.name }}
           </div>
 

@@ -4,21 +4,10 @@
 
     <div v-else>
       <!-- Обманка поля поиска (кликабельная зона) -->
-      <button
-        v-if="!isMainButtonActive"
-        type="button"
+      <button type="button"
         class="mb-3 w-full rounded-2xl border px-4 py-2.5 bg-white hover:bg-gray-50 active:translate-y-px transition flex items-center gap-2 text-left"
-        @click="openSearch"
-        aria-label="Открыть поиск"
-      >
-        <svg class="h-5 w-5 opacity-60" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm9 17-5-5"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-          />
-        </svg>
+        @click="openSearch" aria-label="Открыть поиск">
+        <!-- иконка -->
         <span class="text-gray-500 select-none">Поиск товаров…</span>
       </button>
 
@@ -26,29 +15,19 @@
       <nav class="mb-3 text-sm text-gray-600">
         <div class="flex flex-wrap items-center gap-1">
           <!-- Стрелка назад к родительской категории -->
-          <button
-            v-if="canGoBackCategory"
-            type="button"
+          <button v-if="canGoBackCategory" type="button"
             class="mr-1 flex items-center justify-center w-7 h-7 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50 active:translate-y-px"
-            @click="goBackCategory"
-            aria-label="Назад к предыдущей категории"
-          >
+            @click="goBackCategory" aria-label="Назад к предыдущей категории">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 6L9 12L15 18"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+              <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                stroke-linejoin="round" />
             </svg>
           </button>
 
           <template v-for="(crumb, i) in selected.iterateUp()" :key="crumb.id">
             <button
               class="appearance-none bg-transparent p-0 underline underline-offset-2 text-gray-600 hover:text-gray-800"
-              @click="selectCategory(crumb)"
-            >
+              @click="selectCategory(crumb)">
               {{ crumb.name }}
             </button>
             <span v-if="i < selected.iterateUp().length - 1" class="mx-1 text-gray-400">/</span>
@@ -64,8 +43,7 @@
               <li v-for="cat in selected.children" :key="cat.id">
                 <button
                   class="appearance-none px-3 py-1 rounded-full border border-gray-200 text-sm text-gray-800 whitespace-nowrap hover:bg-gray-50"
-                  @click="selectCategory(cat)"
-                >
+                  @click="selectCategory(cat)">
                   {{ cat.name }}
                 </button>
               </li>
@@ -97,18 +75,40 @@
       </div>
 
     </div>
+
+    <!-- Кнопка "Наверх" -->
+<button
+  v-show="showScrollTop"
+  @click="scrollToTop"
+  class="fixed bottom-6 right-4 z-30
+         rounded-full bg-gray-900 text-white
+         w-11 h-11 flex items-center justify-center
+         shadow-lg hover:bg-gray-800 active:scale-95 transition"
+  aria-label="Наверх"
+>
+  ↑
+</button>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch, computed, onBeforeUnmount, ref } from 'vue'
+
+defineOptions({
+  name: 'Home',
+})
+
+import { onMounted, watch, computed, onBeforeUnmount, ref, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useCategoryStore } from '@/stores/categoryStore'
 import { useGoodsStore } from '@/stores/goodsStore'
 import GoodCard from '@/components/GoodCard.vue'
-import { useMainButton } from '@/composables/useMainButton'
-import { getTmaInitData } from '@/utils/tma'
+import { useScrollStore } from '@/stores/scrollStore'
+
+const router = useRouter()
+const route = useRoute()
+const scrollStore = useScrollStore()
 
 const categoryStore = useCategoryStore()
 const { selected, loading } = storeToRefs(categoryStore)
@@ -119,12 +119,52 @@ const { goods, loading: goodsLoading, hasMore, loadingMore } = storeToRefs(goods
 const loadMoreRef = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
-onMounted(() => {
-  if (!categoryStore.flatList.length) categoryStore.loadCategories()
+// --- Scroll to top ---
+const showScrollTop = ref(false)
 
+const onScroll = () => {
+  showScrollTop.value = window.scrollY > 300
+}
+
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}
+
+// ✅ флаг: восстановление скролла делаем только один раз при входе на Home
+const restored = ref(false)
+
+onBeforeRouteLeave(() => {
+  scrollStore.save(route.fullPath, window.scrollY)
+})
+
+onMounted(() => {
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll() // на случай, если восстановили скролл
+
+  // категории
+  if (!categoryStore.flatList.length) {
+    categoryStore.loadCategories()
+  }
+
+  // первая загрузка товаров
+  if (!goodsStore.isInitialLoaded) {
+    const catId =
+      selected.value?.id && selected.value.id !== 0
+        ? Number(selected.value.id)
+        : undefined
+
+    goodsStore.loadGoods(catId)
+  }
+
+  // observer для пагинации
   observer = new IntersectionObserver(
     ([entry]) => {
       if (!entry.isIntersecting) return
+      if (!goodsStore.isInitialLoaded) return
+      if (goodsLoading.value) return
 
       const catId =
         selected.value?.id && selected.value.id !== 0
@@ -133,7 +173,7 @@ onMounted(() => {
 
       goodsStore.loadGoods(catId)
     },
-    { rootMargin: '200px' } // чтобы догружало чуть заранее
+    { rootMargin: '200px' }
   )
 
   if (loadMoreRef.value) observer.observe(loadMoreRef.value)
@@ -141,21 +181,49 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  window.removeEventListener('scroll', onScroll)
 })
 
 watch(loadMoreRef, (el) => {
-  if (el && observer) {
-    observer.observe(el)
-  }
+  if (el && observer) observer.observe(el)
 })
 
+// ✅ ВОССТАНОВЛЕНИЕ СКРОЛЛА: только когда контент уже реально есть
 watch(
-  () => selected.value?.id,
-  (id) => {
-    const catId = id && id !== 0 ? Number(id) : undefined
-    goodsStore.loadGoods(catId)
+  [() => goods.value.length, () => goodsLoading.value],
+  async ([_len, isLoading]) => {
+    if (restored.value) return
+    if (isLoading) return
+
+    const y = scrollStore.get(route.fullPath)
+    if (y <= 0) {
+      restored.value = true
+      return
+    }
+
+    // ждём, пока DOM действительно отрисуется
+    await nextTick()
+    // иногда в WebView нужно “два такта”
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: y, behavior: 'auto' })
+      restored.value = true
+    })
   },
   { immediate: true }
+)
+
+// смена категории → скролл вверх + новая загрузка
+watch(
+  () => selected.value?.id,
+  (id, prevId) => {
+    if (id === prevId) return
+
+    restored.value = true // чтобы не пытаться восстановить старый скролл
+    window.scrollTo({ top: 0, behavior: 'auto' })
+
+    const catId = id && id !== 0 ? Number(id) : undefined
+    goodsStore.loadGoods(catId)
+  }
 )
 
 const selectCategory = (cat: any) => {
@@ -171,21 +239,7 @@ const goBackCategory = () => {
   }
 }
 
-const router = useRouter()
-
-// Если initData отсутствует — это обычный браузер, MainButton не используем
-const hasTma = computed(() => !!getTmaInitData())
-
-const { isMainButtonActive } = useMainButton({
-  text: 'Поиск',
-  onClick: () => void router.push({ name: 'Search', query: { sid: String(Date.now()) } }),
-  // ключевая правка: в браузере MainButton скрываем
-  show: hasTma.value,
-  enabled: hasTma.value,
-})
-
 const openSearch = () => {
-  // Новый «сеанс» поиска: уникальный sid
   router.push({ name: 'Search', query: { sid: String(Date.now()) } })
 }
 </script>
